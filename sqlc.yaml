@@ -1,0 +1,8 @@
+version: "2"
+sql:
+  - engine: "mysql"
+    queries: "sqlc/queries/"
+    schema: "schemata/"
+    gen:
+      go:
+        out: "internal/repository/"
