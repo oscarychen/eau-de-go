@@ -1,6 +1,6 @@
 version: "2"
 sql:
-  - engine: "mysql"
+  - engine: "postgresql"
     queries: "sqlc/queries/"
     schema: "schemata/"
     gen:
