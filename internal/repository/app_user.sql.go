@@ -28,8 +28,8 @@ INSERT INTO app_user (
 type CreateAppUserParams struct {
 	Username  string
 	Email     string
-	FirstName string
-	LastName  string
+	FirstName sql.NullString
+	LastName  sql.NullString
 	IsActive  bool
 }
 
@@ -155,8 +155,8 @@ WHERE id = $1
 type UpdateAppUserParams struct {
 	ID        uuid.UUID
 	Email     string
-	FirstName string
-	LastName  string
+	FirstName sql.NullString
+	LastName  sql.NullString
 	IsActive  bool
 	LastLogin sql.NullTime
 }

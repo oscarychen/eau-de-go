@@ -17,8 +17,8 @@ type AppUser struct {
 	Email      string
 	Password   string
 	LastLogin  sql.NullTime
-	FirstName  string
-	LastName   string
+	FirstName  sql.NullString
+	LastName   sql.NullString
 	IsStaff    bool
 	IsActive   bool
 	DateJoined time.Time
