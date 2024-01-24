@@ -13,12 +13,19 @@ const (
 	Access  TokenType = "access"
 )
 
+const (
+	RefreshTokenLife = time.Minute * 24 * 14
+	AccessTokenLife  = time.Minute * 15
+)
+
+var NowFunc = time.Now
+
 func addStandardClaims(claims *map[string]interface{}, tokenLife time.Duration) {
 	if *claims == nil {
 		*claims = make(map[string]interface{})
 	}
 
-	now := time.Now()
+	now := NowFunc()
 	(*claims)["iat"] = now.Unix()
 	(*claims)["exp"] = now.Add(tokenLife).Unix()
 	(*claims)["jti"] = uuid.New().String()
@@ -35,9 +42,9 @@ func CreateToken(tokenType TokenType, claims ...map[string]interface{}) (string,
 
 	var tokenLife time.Duration
 	if tokenType == Refresh {
-		tokenLife = time.Hour * 24 * 14
+		tokenLife = RefreshTokenLife
 	} else if tokenType == Access {
-		tokenLife = time.Minute * 15
+		tokenLife = AccessTokenLife
 	}
 
 	addStandardClaims(&tokenClaims, tokenLife)

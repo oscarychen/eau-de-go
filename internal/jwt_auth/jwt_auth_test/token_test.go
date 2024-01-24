@@ -40,9 +40,13 @@ func TestDecodeToken_InvalidTokenType(t *testing.T) {
 }
 
 func TestDecodeToken_ExpiredToken(t *testing.T) {
+
+	jwt_auth.NowFunc = func() time.Time {
+		return time.Now().Add(-jwt_auth.AccessTokenLife - time.Second)
+	}
 	tokenType := jwt_auth.Access
 	token, _ := jwt_auth.CreateToken(tokenType)
-	time.Sleep(4 * time.Second) // wait for token to expire
+
 	_, err := jwt_auth.DecodeToken(tokenType, token)
 
 	assert.NotNil(t, err, "DecodeToken should return an error for expired token")
