@@ -31,14 +31,14 @@ func (h *Handler) GetAppUserById(w http.ResponseWriter, r *http.Request) {
 
 	jsonData, err := json.Marshal(userDto)
 	if err != nil {
-		log.Error("Error marshalling json: %v", err)
+		log.Errorf("Error marshalling json: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	_, err = w.Write(jsonData)
 	if err != nil {
-		log.Error("Error writing response: %v", err)
+		log.Errorf("Error writing response: %v", err)
 		return
 	}
 }
