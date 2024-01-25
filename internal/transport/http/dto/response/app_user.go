@@ -1,4 +1,4 @@
-package app_user
+package response
 
 import (
 	"eau-de-go/internal/repository"
@@ -14,7 +14,7 @@ type AppUserDto struct {
 	IsActive  bool
 }
 
-func convertDbRow(user repository.AppUser) AppUserDto {
+func ConvertDbRow(user repository.AppUser) AppUserDto {
 	var firstName, lastName, lastLogin *string
 	if user.FirstName.Valid {
 		firstName = &user.FirstName.String

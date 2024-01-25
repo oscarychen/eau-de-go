@@ -21,11 +21,11 @@ func NewAppUserService(appUserStore AppUserStore) *AppUserService {
 	}
 }
 
-func (service *AppUserService) GetAppUserById(ctx context.Context, id uuid.UUID) (AppUserDto, error) {
-	userRow, err := service.AppUserStore.GetAppUserById(ctx, id)
+func (service *AppUserService) GetAppUserById(ctx context.Context, id uuid.UUID) (repository.AppUser, error) {
+	dao, err := service.AppUserStore.GetAppUserById(ctx, id)
 	if err != nil {
 		fmt.Println(err)
-		return AppUserDto{}, err
+		return repository.AppUser{}, err
 	}
-	return convertDbRow(userRow), nil
+	return dao, nil
 }
