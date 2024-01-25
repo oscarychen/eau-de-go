@@ -5,18 +5,12 @@ import (
 	"eau-de-go/internal/db"
 	"eau-de-go/internal/repository"
 	"eau-de-go/internal/transport/http"
-	"github.com/joho/godotenv"
 	log "github.com/sirupsen/logrus"
 )
 
 func Run() error {
 	log.SetFormatter(&log.JSONFormatter{})
 	log.Info("Setting Up Our APP")
-
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
-	}
 
 	database, err := db.NewDatabase()
 	if err != nil {

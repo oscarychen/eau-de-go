@@ -1,6 +1,7 @@
 package jwt_auth
 
 import (
+	"eau-de-go/internal/settings"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"time"
@@ -11,11 +12,6 @@ type TokenType string
 const (
 	Refresh TokenType = "refresh"
 	Access  TokenType = "access"
-)
-
-const (
-	RefreshTokenLife = time.Minute * 24 * 14
-	AccessTokenLife  = time.Minute * 15
 )
 
 var NowFunc = time.Now
@@ -42,9 +38,9 @@ func CreateToken(tokenType TokenType, claims ...map[string]interface{}) (string,
 
 	var tokenLife time.Duration
 	if tokenType == Refresh {
-		tokenLife = RefreshTokenLife
+		tokenLife = settings.RefreshTokenLife
 	} else if tokenType == Access {
-		tokenLife = AccessTokenLife
+		tokenLife = settings.AccessTokenLife
 	}
 
 	addStandardClaims(&tokenClaims, tokenLife)

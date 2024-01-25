@@ -2,6 +2,7 @@ package jwt_auth_test
 
 import (
 	"eau-de-go/internal/jwt_auth"
+	"eau-de-go/internal/settings"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
@@ -42,7 +43,7 @@ func TestDecodeToken_InvalidTokenType(t *testing.T) {
 func TestDecodeToken_ExpiredToken(t *testing.T) {
 
 	jwt_auth.NowFunc = func() time.Time {
-		return time.Now().Add(-jwt_auth.AccessTokenLife - time.Second)
+		return time.Now().Add(-settings.AccessTokenLife - time.Second)
 	}
 	tokenType := jwt_auth.Access
 	token, _ := jwt_auth.CreateToken(tokenType)
