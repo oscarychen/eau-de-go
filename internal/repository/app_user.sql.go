@@ -16,9 +16,9 @@ const createAppUser = `-- name: CreateAppUser :one
 INSERT INTO app_user (
     username,
     email,
+    password,
     first_name,
-    last_name,
-    is_active
+    last_name
 ) VALUES (
              $1, $2, $3, $4, $5
          )
@@ -28,18 +28,18 @@ INSERT INTO app_user (
 type CreateAppUserParams struct {
 	Username  string
 	Email     string
+	Password  string
 	FirstName sql.NullString
 	LastName  sql.NullString
-	IsActive  bool
 }
 
 func (q *Queries) CreateAppUser(ctx context.Context, arg CreateAppUserParams) (AppUser, error) {
 	row := q.db.QueryRowContext(ctx, createAppUser,
 		arg.Username,
 		arg.Email,
+		arg.Password,
 		arg.FirstName,
 		arg.LastName,
-		arg.IsActive,
 	)
 	var i AppUser
 	err := row.Scan(
@@ -146,8 +146,7 @@ UPDATE app_user
 SET email = $2,
     first_name = $3,
     last_name = $4,
-    is_active = $5,
-    last_login = $6
+    is_active = $5
 WHERE id = $1
     RETURNING id, username, email, password, last_login, first_name, last_name, is_staff, is_active, date_joined
 `
@@ -158,7 +157,6 @@ type UpdateAppUserParams struct {
 	FirstName sql.NullString
 	LastName  sql.NullString
 	IsActive  bool
-	LastLogin sql.NullTime
 }
 
 func (q *Queries) UpdateAppUser(ctx context.Context, arg UpdateAppUserParams) (AppUser, error) {
@@ -168,8 +166,67 @@ func (q *Queries) UpdateAppUser(ctx context.Context, arg UpdateAppUserParams) (A
 		arg.FirstName,
 		arg.LastName,
 		arg.IsActive,
-		arg.LastLogin,
 	)
+	var i AppUser
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.Email,
+		&i.Password,
+		&i.LastLogin,
+		&i.FirstName,
+		&i.LastName,
+		&i.IsStaff,
+		&i.IsActive,
+		&i.DateJoined,
+	)
+	return i, err
+}
+
+const updateAppUserLastLogin = `-- name: UpdateAppUserLastLogin :one
+UPDATE app_user
+SET last_login = $2
+WHERE id = $1
+    RETURNING id, username, email, password, last_login, first_name, last_name, is_staff, is_active, date_joined
+`
+
+type UpdateAppUserLastLoginParams struct {
+	ID        uuid.UUID
+	LastLogin sql.NullTime
+}
+
+func (q *Queries) UpdateAppUserLastLogin(ctx context.Context, arg UpdateAppUserLastLoginParams) (AppUser, error) {
+	row := q.db.QueryRowContext(ctx, updateAppUserLastLogin, arg.ID, arg.LastLogin)
+	var i AppUser
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.Email,
+		&i.Password,
+		&i.LastLogin,
+		&i.FirstName,
+		&i.LastName,
+		&i.IsStaff,
+		&i.IsActive,
+		&i.DateJoined,
+	)
+	return i, err
+}
+
+const updateAppUserPassword = `-- name: UpdateAppUserPassword :one
+UPDATE app_user
+SET password = $2
+WHERE id = $1
+    RETURNING id, username, email, password, last_login, first_name, last_name, is_staff, is_active, date_joined
+`
+
+type UpdateAppUserPasswordParams struct {
+	ID       uuid.UUID
+	Password string
+}
+
+func (q *Queries) UpdateAppUserPassword(ctx context.Context, arg UpdateAppUserPasswordParams) (AppUser, error) {
+	row := q.db.QueryRowContext(ctx, updateAppUserPassword, arg.ID, arg.Password)
 	var i AppUser
 	err := row.Scan(
 		&i.ID,

@@ -33,6 +33,7 @@ func NewHandler(service AppUserService) *Handler {
 
 func (h *Handler) mapRoutes() {
 	h.Router.HandleFunc("/api/user/{id}/", h.GetAppUserById).Methods("GET")
+	h.Router.HandleFunc("/api/user/", h.CreateAppUser).Methods("POST")
 }
 
 func (h *Handler) Serve() error {
