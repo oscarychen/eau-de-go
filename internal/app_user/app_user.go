@@ -3,12 +3,13 @@ package app_user
 import (
 	"context"
 	"eau-de-go/internal/repository"
-	"fmt"
 	"github.com/google/uuid"
+	log "github.com/sirupsen/logrus"
 )
 
 type AppUserStore interface {
 	GetAppUserById(ctx context.Context, id uuid.UUID) (repository.AppUser, error)
+	CreateAppUser(ctx context.Context, appUser repository.CreateAppUserParams) (repository.AppUser, error)
 }
 
 type AppUserService struct {
@@ -21,10 +22,19 @@ func NewAppUserService(appUserStore AppUserStore) *AppUserService {
 	}
 }
 
+func (service *AppUserService) CreateAppUser(ctx context.Context, appUser repository.CreateAppUserParams) (repository.AppUser, error) {
+	dao, err := service.AppUserStore.CreateAppUser(ctx, appUser)
+	if err != nil {
+		log.Error(err)
+		return repository.AppUser{}, err
+	}
+	return dao, nil
+}
+
 func (service *AppUserService) GetAppUserById(ctx context.Context, id uuid.UUID) (repository.AppUser, error) {
 	dao, err := service.AppUserStore.GetAppUserById(ctx, id)
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 		return repository.AppUser{}, err
 	}
 	return dao, nil

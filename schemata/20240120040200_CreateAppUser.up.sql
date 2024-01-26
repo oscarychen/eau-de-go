@@ -2,7 +2,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE COLLATION IF NOT EXISTS "case_insensitive" (locale="und-u-ks-level2", provider="icu", deterministic=false);
 
 CREATE TABLE "app_user" (
-                            "id" uuid NOT NULL PRIMARY KEY,
+                            "id" uuid NOT NULL DEFAULT uuid_generate_v4() PRIMARY KEY,
                             "username" varchar(150) COLLATE "case_insensitive" NOT NULL UNIQUE,
                             "email" varchar(254) COLLATE "case_insensitive" NOT NULL UNIQUE,
                             "password" varchar(128) NOT NULL,
