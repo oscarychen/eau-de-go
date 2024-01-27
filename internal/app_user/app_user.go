@@ -3,6 +3,7 @@ package app_user
 import (
 	"context"
 	"eau-de-go/internal/repository"
+	"eau-de-go/internal/utils"
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 )
@@ -22,8 +23,10 @@ func NewAppUserService(appUserStore AppUserStore) *AppUserService {
 	}
 }
 
-func (service *AppUserService) CreateAppUser(ctx context.Context, appUser repository.CreateAppUserParams) (repository.AppUser, error) {
-	dao, err := service.AppUserStore.CreateAppUser(ctx, appUser)
+func (service *AppUserService) CreateAppUser(ctx context.Context, appUserParams repository.CreateAppUserParams) (repository.AppUser, error) {
+	hashedPassword, err := utils.HashPassword(appUserParams.Password)
+	appUserParams.Password = string(hashedPassword)
+	dao, err := service.AppUserStore.CreateAppUser(ctx, appUserParams)
 	if err != nil {
 		log.Error(err)
 		return repository.AppUser{}, err
