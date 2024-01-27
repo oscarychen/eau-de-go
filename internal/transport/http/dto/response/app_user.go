@@ -14,6 +14,12 @@ type AppUserDto struct {
 	IsActive  bool
 }
 
+type AppUserLoginResponse struct {
+	AppUserDto
+	AccessToken  string
+	RefreshToken string
+}
+
 func ConvertDbRow(user repository.AppUser) AppUserDto {
 	var firstName, lastName, lastLogin *string
 	if user.FirstName.Valid {

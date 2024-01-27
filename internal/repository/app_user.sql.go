@@ -103,6 +103,29 @@ func (q *Queries) GetAppUserById(ctx context.Context, id uuid.UUID) (AppUser, er
 	return i, err
 }
 
+const getAppUserByUsername = `-- name: GetAppUserByUsername :one
+SELECT id, username, email, password, last_login, first_name, last_name, is_staff, is_active, date_joined FROM app_user
+WHERE username = $1 LIMIT 1
+`
+
+func (q *Queries) GetAppUserByUsername(ctx context.Context, username string) (AppUser, error) {
+	row := q.db.QueryRowContext(ctx, getAppUserByUsername, username)
+	var i AppUser
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.Email,
+		&i.Password,
+		&i.LastLogin,
+		&i.FirstName,
+		&i.LastName,
+		&i.IsStaff,
+		&i.IsActive,
+		&i.DateJoined,
+	)
+	return i, err
+}
+
 const listAppUser = `-- name: ListAppUser :many
 SELECT id, username, email, password, last_login, first_name, last_name, is_staff, is_active, date_joined FROM app_user
 `

@@ -20,9 +20,9 @@ func Run() error {
 
 	// database.Ping(context.Background())
 
-	userQueries := repository.New(database.Client)
-	userService := appuser.NewAppUserService(userQueries)
-	handler := http.NewHandler(userService)
+	queries := repository.New(database.Client)
+	appUserService := appuser.NewAppUserService(queries)
+	handler := http.NewHandler(appUserService)
 
 	if err := handler.Serve(); err != nil {
 		log.Error("failed to gracefully serve our application")

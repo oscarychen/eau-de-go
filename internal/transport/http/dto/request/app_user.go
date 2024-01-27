@@ -8,6 +8,11 @@ import (
 	"net/http"
 )
 
+type AppUserLoginRequestDto struct {
+	Username string
+	Password string
+}
+
 type CreateAppUserRequestDto struct {
 	Username  string
 	FirstName sql.NullString
@@ -37,6 +42,9 @@ func (c *CreateAppUserRequestDto) UnmarshalJSON(data []byte) error {
 func MakeCreateAppUserParamsFromRequest(r *http.Request) (repository.CreateAppUserParams, error) {
 	var dto CreateAppUserRequestDto
 	bodyBytes, err := io.ReadAll(r.Body)
+	if err != nil {
+		return repository.CreateAppUserParams{}, err
+	}
 	err = json.Unmarshal(bodyBytes, &dto)
 	if err != nil {
 		return repository.CreateAppUserParams{}, err

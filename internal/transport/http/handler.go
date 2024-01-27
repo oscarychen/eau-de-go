@@ -12,14 +12,15 @@ import (
 )
 
 type Handler struct {
-	Router  *mux.Router
-	Service AppUserService
-	Server  *http.Server
+	Router         *mux.Router
+	AppUserService AppUserService
+	AuthService    AuthService
+	Server         *http.Server
 }
 
-func NewHandler(service AppUserService) *Handler {
+func NewHandler(appUserService AppUserService) *Handler {
 	h := &Handler{
-		Service: service,
+		AppUserService: appUserService,
 	}
 	h.Router = mux.NewRouter()
 	h.mapRoutes()
@@ -32,6 +33,8 @@ func NewHandler(service AppUserService) *Handler {
 }
 
 func (h *Handler) mapRoutes() {
+
+	h.Router.HandleFunc("/api/user/login/", h.Login).Methods("POST")
 	h.Router.HandleFunc("/api/user/{id}/", h.GetAppUserById).Methods("GET")
 	h.Router.HandleFunc("/api/user/", h.CreateAppUser).Methods("POST")
 }
