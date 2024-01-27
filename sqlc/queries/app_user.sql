@@ -6,6 +6,10 @@ WHERE id = $1 LIMIT 1;
 SELECT * FROM app_user
 WHERE email = $1 LIMIT 1;
 
+-- name: GetAppUserByUsername :one
+SELECT * FROM app_user
+WHERE username = $1 LIMIT 1;
+
 -- name: ListAppUser :many
 SELECT * FROM app_user;
 
