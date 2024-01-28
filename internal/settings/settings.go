@@ -9,14 +9,15 @@ import (
 )
 
 var (
-	DbHost           string
-	DbPort           string
-	SslMode          string
-	DbUsername       string
-	DbName           string
-	DbPassword       string
-	RefreshTokenLife time.Duration
-	AccessTokenLife  time.Duration
+	DbHost              string
+	DbPort              string
+	SslMode             string
+	DbUsername          string
+	DbName              string
+	DbPassword          string
+	RefreshTokenLife    time.Duration
+	AccessTokenLife     time.Duration
+	RefreshCookieSecure bool
 )
 
 func init() {
@@ -46,6 +47,8 @@ func init() {
 		defaultAccessTokenLifeMinutes := 15
 		AccessTokenLife = time.Minute * time.Duration(defaultAccessTokenLifeMinutes)
 	}
+
+	RefreshCookieSecure, _ = strconv.ParseBool(getEnv("REFRESH_COOKIE_SECURE", "true"))
 }
 
 func getEnv(key string, defaultValue string) string {

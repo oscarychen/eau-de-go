@@ -3,6 +3,7 @@ package http
 import (
 	"context"
 	"eau-de-go/internal/repository"
+	"eau-de-go/internal/settings"
 	"eau-de-go/internal/transport/http/dto/request"
 	"eau-de-go/internal/transport/http/dto/response"
 	"encoding/json"
@@ -11,7 +12,10 @@ import (
 	log "github.com/sirupsen/logrus"
 	"io"
 	"net/http"
+	"time"
 )
+
+var NowFunc = time.Now
 
 type AppUserService interface {
 	Login(ctx context.Context, username string, password string) (repository.AppUser, error)
@@ -40,13 +44,23 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, accessToken, err := h.AppUserService.GetAppUserTokens(userDao)
+	refreshToken, accessToken, err := h.AppUserService.GetAppUserTokens(userDao)
+
+	cookie := http.Cookie{
+		Name:     "refresh",
+		Value:    refreshToken,
+		HttpOnly: true,
+		Path:     "/api/user/refresh",
+		SameSite: http.SameSiteStrictMode,
+		Secure:   settings.RefreshCookieSecure,
+		Expires:  NowFunc().Add(settings.RefreshTokenLife),
+	}
+	http.SetCookie(w, &cookie)
 
 	userDto := response.ConvertDbRow(userDao)
 	responseData := response.AppUserLoginResponse{
 		AppUserDto:  userDto,
 		AccessToken: accessToken,
-		//RefreshToken: refreshToken,
 	}
 
 	jsonData, err := json.Marshal(responseData)
@@ -61,6 +75,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		log.Errorf("Error writing response: %v", err)
 		return
 	}
+
 }
 
 func (h *Handler) GetAppUserById(w http.ResponseWriter, r *http.Request) {
