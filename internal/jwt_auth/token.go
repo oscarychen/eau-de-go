@@ -16,18 +16,25 @@ const (
 
 var NowFunc = time.Now
 
-func addStandardClaims(claims *map[string]interface{}, tokenLife time.Duration) {
-	if *claims == nil {
-		*claims = make(map[string]interface{})
+func getClaimsWithStandardClaims(claims map[string]interface{}, tokenLife time.Duration) map[string]interface{} {
+
+	newClaims := make(map[string]interface{})
+
+	for key, value := range claims {
+		newClaims[key] = value
 	}
 
 	now := NowFunc()
-	(*claims)["iat"] = now.Unix()
-	(*claims)["exp"] = now.Add(tokenLife).Unix()
-	(*claims)["jti"] = uuid.New().String()
+	newClaims["iat"] = now.Unix()
+	newClaims["jti"] = uuid.New().String()
+
+	if _, ok := newClaims["exp"]; ok == false {
+		newClaims["exp"] = now.Add(tokenLife).Unix()
+	}
+	return newClaims
 }
 
-func CreateToken(tokenType TokenType, claims ...map[string]interface{}) (string, error) {
+func CreateToken(tokenType TokenType, claims ...map[string]interface{}) (string, map[string]interface{}, error) {
 	var tokenClaims map[string]interface{}
 	if len(claims) > 0 {
 		tokenClaims = claims[0]
@@ -43,17 +50,17 @@ func CreateToken(tokenType TokenType, claims ...map[string]interface{}) (string,
 		tokenLife = settings.AccessTokenLife
 	}
 
-	addStandardClaims(&tokenClaims, tokenLife)
+	tokenClaims = getClaimsWithStandardClaims(tokenClaims, tokenLife)
 
 	token := jwt.NewWithClaims(jwt.SigningMethodPS256, jwt.MapClaims(tokenClaims))
 
 	signingKey, err := GetInMemoryRsaKeyPair().GetSigningKey()
 	tokenString, err := token.SignedString(signingKey)
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
 
-	return tokenString, nil
+	return tokenString, tokenClaims, nil
 }
 
 func DecodeToken(tokenType TokenType, tokenString string) (map[string]interface{}, error) {

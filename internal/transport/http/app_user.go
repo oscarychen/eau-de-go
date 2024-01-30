@@ -15,13 +15,11 @@ import (
 	"time"
 )
 
-var NowFunc = time.Now
-
 type AppUserService interface {
 	Login(ctx context.Context, username string, password string) (repository.AppUser, error)
 	GetAppUserById(ctx context.Context, ID uuid.UUID) (repository.AppUser, error)
 	CreateAppUser(ctx context.Context, appUser repository.CreateAppUserParams) (repository.AppUser, error)
-	GetAppUserTokens(appUser repository.AppUser) (string, string, error)
+	GetAppUserTokens(appUser repository.AppUser) (string, map[string]interface{}, string, map[string]interface{}, error)
 }
 
 func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
@@ -44,7 +42,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	refreshToken, accessToken, err := h.AppUserService.GetAppUserTokens(userDao)
+	refreshToken, refreshTokenClaims, accessToken, _, err := h.AppUserService.GetAppUserTokens(userDao)
 
 	cookie := http.Cookie{
 		Name:     "refresh",
@@ -53,7 +51,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		Path:     "/api/user/refresh",
 		SameSite: http.SameSiteStrictMode,
 		Secure:   settings.RefreshCookieSecure,
-		Expires:  NowFunc().Add(settings.RefreshTokenLife),
+		Expires:  time.Unix(refreshTokenClaims["exp"].(int64), 0),
 	}
 	http.SetCookie(w, &cookie)
 
