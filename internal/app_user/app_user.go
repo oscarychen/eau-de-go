@@ -67,7 +67,7 @@ func (service *AppUserService) Login(ctx context.Context, username string, passw
 	return dao, nil
 }
 
-func (service *AppUserService) GetAppUserTokens(appUser repository.AppUser) (string, string, error) {
+func (service *AppUserService) GetAppUserTokens(appUser repository.AppUser) (string, map[string]interface{}, string, map[string]interface{}, error) {
 	claims := make(map[string]interface{})
 	claims["id"] = appUser.ID
 	claims["username"] = appUser.Username
@@ -79,15 +79,17 @@ func (service *AppUserService) GetAppUserTokens(appUser repository.AppUser) (str
 	claims["last_login"] = appUser.LastLogin
 	claims["date_joined"] = appUser.DateJoined
 
-	refreshToken, err := jwt_auth.CreateToken(jwt_auth.Refresh, claims)
+	refreshToken, refreshTokenClaims, err := jwt_auth.CreateToken(jwt_auth.Refresh, claims)
 	if err != nil {
 		log.Error(err)
-		return "", "", err
+		return "", nil, "", nil, err
 	}
-	accessToken, err := jwt_auth.CreateToken(jwt_auth.Access, claims)
+
+	accessToken, accessTokenClaims, err := jwt_auth.CreateToken(jwt_auth.Access, claims)
 	if err != nil {
 		log.Error(err)
-		return "", "", err
+		return "", nil, "", nil, err
 	}
-	return refreshToken, accessToken, nil
+
+	return refreshToken, refreshTokenClaims, accessToken, accessTokenClaims, nil
 }
