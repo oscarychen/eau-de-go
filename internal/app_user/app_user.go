@@ -79,17 +79,20 @@ func (service *AppUserService) GetAppUserTokens(appUser repository.AppUser) (str
 	claims["last_login"] = appUser.LastLogin
 	claims["date_joined"] = appUser.DateJoined
 
-	refreshToken, refreshTokenClaims, err := jwt_auth.CreateToken(jwt_auth.Refresh, claims)
+	refreshToken, refreshTokenClaims, err := jwt_auth.CreateRefreshToken(claims)
 	if err != nil {
 		log.Error(err)
 		return "", nil, "", nil, err
 	}
 
-	accessToken, accessTokenClaims, err := jwt_auth.CreateToken(jwt_auth.Access, claims)
+	accessToken, accessTokenClaims, err := jwt_auth.CreateAccessToken(claims)
 	if err != nil {
 		log.Error(err)
 		return "", nil, "", nil, err
 	}
-
 	return refreshToken, refreshTokenClaims, accessToken, accessTokenClaims, nil
+}
+
+func (service *AppUserService) RefreshToken(ctx context.Context, refreshToken string) (string, map[string]interface{}, error) {
+	return jwt_auth.CreateAccessTokenFromRefreshToken(refreshToken)
 }

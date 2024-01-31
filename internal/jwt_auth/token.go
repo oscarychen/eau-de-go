@@ -16,43 +16,17 @@ const (
 
 var NowFunc = time.Now
 
-func getClaimsWithStandardClaims(claims map[string]interface{}, tokenLife time.Duration) map[string]interface{} {
-
-	newClaims := make(map[string]interface{})
-
-	for key, value := range claims {
-		newClaims[key] = value
-	}
+func injectStandardClaims(claims map[string]interface{}) {
 
 	now := NowFunc()
-	newClaims["iat"] = now.Unix()
-	newClaims["jti"] = uuid.New().String()
-
-	if _, ok := newClaims["exp"]; ok == false {
-		newClaims["exp"] = now.Add(tokenLife).Unix()
-	}
-	return newClaims
+	claims["iat"] = now.Unix()
+	claims["jti"] = uuid.New().String()
 }
 
-func CreateToken(tokenType TokenType, claims ...map[string]interface{}) (string, map[string]interface{}, error) {
-	var tokenClaims map[string]interface{}
-	if len(claims) > 0 {
-		tokenClaims = claims[0]
-	} else {
-		tokenClaims = make(map[string]interface{})
-	}
-	tokenClaims["token_type"] = string(tokenType)
+func createToken(claims map[string]interface{}) (string, map[string]interface{}, error) {
 
-	var tokenLife time.Duration
-	if tokenType == Refresh {
-		tokenLife = settings.RefreshTokenLife
-	} else if tokenType == Access {
-		tokenLife = settings.AccessTokenLife
-	}
-
-	tokenClaims = getClaimsWithStandardClaims(tokenClaims, tokenLife)
-
-	token := jwt.NewWithClaims(jwt.SigningMethodPS256, jwt.MapClaims(tokenClaims))
+	injectStandardClaims(claims)
+	token := jwt.NewWithClaims(jwt.SigningMethodPS256, jwt.MapClaims(claims))
 
 	signingKey, err := GetInMemoryRsaKeyPair().GetSigningKey()
 	tokenString, err := token.SignedString(signingKey)
@@ -60,7 +34,7 @@ func CreateToken(tokenType TokenType, claims ...map[string]interface{}) (string,
 		return "", nil, err
 	}
 
-	return tokenString, tokenClaims, nil
+	return tokenString, claims, nil
 }
 
 func DecodeToken(tokenType TokenType, tokenString string) (map[string]interface{}, error) {
@@ -96,4 +70,39 @@ func validateTokenTypes(claims map[string]interface{}, tokenType TokenType) erro
 
 func validateJti(claims map[string]interface{}) error {
 	return nil
+}
+
+func CreateRefreshToken(claims map[string]interface{}) (string, map[string]interface{}, error) {
+	tokenClaims := copyTokenClaims(claims)
+	tokenClaims["token_type"] = Refresh
+	tokenClaims["exp"] = NowFunc().Add(settings.RefreshTokenLife).Unix()
+	return createToken(tokenClaims)
+}
+
+func CreateAccessToken(claims map[string]interface{}) (string, map[string]interface{}, error) {
+	tokenClaims := copyTokenClaims(claims)
+	tokenClaims["token_type"] = Access
+	tokenClaims["exp"] = NowFunc().Add(settings.AccessTokenLife).Unix()
+	return createToken(tokenClaims)
+}
+
+func CreateAccessTokenFromRefreshToken(refreshToken string) (string, map[string]interface{}, error) {
+	refreshTokenClaims, err := DecodeToken(Refresh, refreshToken)
+	if err != nil {
+		return "", nil, err
+	}
+	claims := copyTokenClaims(refreshTokenClaims)
+	claims["token_type"] = Access
+	claims["exp"] = NowFunc().Add(settings.AccessTokenLife).Unix()
+	return createToken(claims)
+}
+
+func copyTokenClaims(claims map[string]interface{}) map[string]interface{} {
+	copiedClaimns := make(map[string]interface{})
+	for key, value := range claims {
+		if key != "exp" && key != "iat" && key != "jti" && key != "token_type" {
+			copiedClaimns[key] = value
+		}
+	}
+	return copiedClaimns
 }

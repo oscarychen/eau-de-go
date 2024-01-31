@@ -34,14 +34,14 @@ func init() {
 	DbName = getEnv("DB_NAME", "eau-de-go")
 	DbPassword = getEnv("DB_PASSWORD", "")
 
-	if refreshTokenLifeMinutes, err := strconv.Atoi(getEnv("REFRESH_TOKEN_LIFE_MINUTES", "")); err == nil {
+	if refreshTokenLifeMinutes, err := strconv.Atoi(getEnv("REFRESH_TOKEN_LIFE_MINUTES", "10080")); err == nil {
 		RefreshTokenLife = time.Minute * time.Duration(refreshTokenLifeMinutes)
 	} else {
 		defaultRefreshTokenLifeMinutes := 10080
 		RefreshTokenLife = time.Minute * time.Duration(defaultRefreshTokenLifeMinutes)
 	}
 
-	if accessTokenLifeMinutes, err := strconv.Atoi(getEnv("ACCESS_TOKEN_LIFE_MINUTES", "")); err == nil {
+	if accessTokenLifeMinutes, err := strconv.Atoi(getEnv("ACCESS_TOKEN_LIFE_MINUTES", "15")); err == nil {
 		AccessTokenLife = time.Minute * time.Duration(accessTokenLifeMinutes)
 	} else {
 		defaultAccessTokenLifeMinutes := 15
