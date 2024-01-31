@@ -2,75 +2,108 @@ package jwt_auth_test
 
 import (
 	"eau-de-go/internal/jwt_auth"
+	"eau-de-go/internal/settings"
 	"github.com/stretchr/testify/assert"
 	"testing"
+	"time"
 )
 
-func TestCreateTokenReturnsValidTokenAndClaims(t *testing.T) {
-	tokenType := jwt_auth.Access
-	token, claims, err := jwt_auth.CreateToken(tokenType)
-
-	assert.Nil(t, err)
-	assert.NotNil(t, token)
-	assert.NotNil(t, claims)
-	assert.Equal(t, string(tokenType), claims["token_type"])
-	assert.NotNil(t, claims["iat"])
-	assert.NotNil(t, claims["exp"])
-	assert.NotNil(t, claims["jti"])
-}
-
-func TestCreateTokenWithExplicitExpClaim(t *testing.T) {
-	tokenType := jwt_auth.Access
+func TestCreateRefreshToken(t *testing.T) {
 	claims := map[string]interface{}{
-		"exp": 12345,
+		"username": "testuser",
 	}
-	token, tokenClaims, err := jwt_auth.CreateToken(tokenType, claims)
+	token, tokenClaims, err := jwt_auth.CreateRefreshToken(claims)
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+	if token == "" {
+		t.Error("Expected token to be non-empty")
+	}
+	assert.Equal(t, claims["username"], tokenClaims["username"], "Expected username to be 'testuser'")
+	assert.NotNil(t, tokenClaims["iat"], "Expected iat to be set")
+	assert.NotNil(t, tokenClaims["jti"], "Expected jti to be set")
+	assert.NotNil(t, tokenClaims["exp"], "Expected exp to be set")
 
-	assert.Nil(t, err)
-	assert.NotNil(t, token)
-	assert.Equal(t, 12345, tokenClaims["exp"])
+	assert.Nil(t, claims["iat"], "Expected claims argument to not be modified")
+	assert.Nil(t, claims["jti"], "Expected claims argument to not be modified")
+	assert.Nil(t, claims["exp"], "Expected claims argument to not be modified")
 }
 
-func TestCreateTokenReturnsDifferentTokens(t *testing.T) {
-	tokenType := jwt_auth.Access
-	token1, _, _ := jwt_auth.CreateToken(tokenType)
-	token2, _, _ := jwt_auth.CreateToken(tokenType)
+func TestCreateAccessTokenFromRefreshToken(t *testing.T) {
+	claims := map[string]interface{}{
+		"username": "testuser",
+	}
+	refreshToken, _, err := jwt_auth.CreateRefreshToken(claims)
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+	accessToken, accessTokenClaims, err := jwt_auth.CreateAccessTokenFromRefreshToken(refreshToken)
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+	if accessToken == "" {
+		t.Error("Expected token to be non-empty")
+	}
+	assert.Equal(t, claims["username"], accessTokenClaims["username"], "Expected username to be 'testuser'")
+	assert.NotNil(t, accessTokenClaims["iat"], "Expected iat to be set")
+	assert.NotNil(t, accessTokenClaims["jti"], "Expected jti to be set")
+	assert.NotNil(t, accessTokenClaims["exp"], "Expected exp to be set")
 
-	assert.NotEqual(t, token1, token2)
+	assert.Nil(t, claims["iat"], "Expected claims argument to not be modified")
+	assert.Nil(t, claims["jti"], "Expected claims argument to not be modified")
+	assert.Nil(t, claims["exp"], "Expected claims argument to not be modified")
+
 }
 
-func TestDecodeTokenReturnsValidClaims(t *testing.T) {
-	tokenType := jwt_auth.Access
-	token, _, _ := jwt_auth.CreateToken(tokenType)
-	claims, err := jwt_auth.DecodeToken(tokenType, token)
-
-	assert.Nil(t, err)
-	assert.NotNil(t, claims)
-	assert.Equal(t, string(tokenType), claims["token_type"])
+func TestCreateAccessTokenFromInvalidRefreshToken(t *testing.T) {
+	_, _, err := jwt_auth.CreateAccessTokenFromRefreshToken("invalidToken")
+	if err == nil {
+		t.Error("Expected error for invalid refresh token")
+	}
 }
 
-func TestDecodeTokenReturnsErrorForInvalidToken(t *testing.T) {
-	tokenType := jwt_auth.Access
-	_, err := jwt_auth.DecodeToken(tokenType, "invalid")
+func TestDecodeToken(t *testing.T) {
+	claims := map[string]interface{}{
+		"username": "testuser",
+	}
+	token, _, err := jwt_auth.CreateRefreshToken(claims)
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+	decodedClaims, err := jwt_auth.DecodeToken(jwt_auth.Refresh, token)
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+	if decodedClaims["username"] != "testuser" {
+		t.Errorf("Expected username to be 'testuser', got '%v'", decodedClaims["username"])
+	}
 
-	assert.NotNil(t, err)
 }
 
-func TestDecodeTokenReturnsErrorForMismatchedTokenType(t *testing.T) {
-	token, _, _ := jwt_auth.CreateToken(jwt_auth.Access)
-	_, err := jwt_auth.DecodeToken(jwt_auth.Refresh, token)
-
-	assert.NotNil(t, err)
+func TestDecodeInvalidToken(t *testing.T) {
+	_, err := jwt_auth.DecodeToken(jwt_auth.Refresh, "invalidToken")
+	if err == nil {
+		t.Error("Expected error for invalid token")
+	}
 }
 
-func TestCreateTokenDoesNotModifyClaims(t *testing.T) {
-	tokenType := jwt_auth.Access
-	claims := map[string]interface{}{}
-	_, tokenClaims, _ := jwt_auth.CreateToken(tokenType, claims)
+func TestTokenExpiry(t *testing.T) {
+	claims := map[string]interface{}{
+		"username": "testuser",
+	}
 
-	_, expInClaims := claims["exp"]
-	assert.False(t, expInClaims)
+	jwt_auth.NowFunc = func() time.Time {
+		return time.Now().Add(-settings.RefreshTokenLife - time.Minute)
+	}
 
-	_, expInTokenClaims := tokenClaims["exp"]
-	assert.True(t, expInTokenClaims)
+	token, _, err := jwt_auth.CreateRefreshToken(claims)
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+
+	_, err = jwt_auth.DecodeToken(jwt_auth.Refresh, token)
+	if err == nil {
+		t.Error("Expected error for expired token")
+	}
+	jwt_auth.NowFunc = time.Now
 }
