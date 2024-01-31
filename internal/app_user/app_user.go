@@ -5,7 +5,9 @@ import (
 	"eau-de-go/internal/jwt_auth"
 	"eau-de-go/internal/repository"
 	"eau-de-go/internal/utils"
+	"errors"
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -29,9 +31,16 @@ func (service *AppUserService) CreateAppUser(ctx context.Context, appUserParams 
 	hashedPassword, err := utils.HashPassword(appUserParams.Password)
 	appUserParams.Password = string(hashedPassword)
 	dao, err := service.AppUserStore.CreateAppUser(ctx, appUserParams)
-	if err != nil {
-		log.Error(err)
-		return repository.AppUser{}, err
+	if err != nil { // TODO: Refactor this error handling
+		var dbErr *pq.Error
+		if errors.As(err, &dbErr) {
+			if dbErr.Code.Name() == "unique_violation" {
+				return repository.AppUser{}, &repository.DuplicateKeyError{Key: "Duplicate user already exist."}
+			}
+		} else {
+			log.Error(err)
+			return repository.AppUser{}, err
+		}
 	}
 	return dao, nil
 }
