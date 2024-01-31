@@ -7,6 +7,7 @@ import (
 	"eau-de-go/internal/transport/http/dto/request"
 	"eau-de-go/internal/transport/http/dto/response"
 	"encoding/json"
+	"errors"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
@@ -26,7 +27,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 
 	bodyBytes, err := io.ReadAll(r.Body)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	var loginDto request.AppUserLoginRequestDto
@@ -38,7 +39,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 
 	userDao, err := h.AppUserService.Login(r.Context(), loginDto.Username, loginDto.Password)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
+		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
 
@@ -64,7 +65,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	jsonData, err := json.Marshal(responseData)
 	if err != nil {
 		log.Errorf("Error marshalling json: %v", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -96,7 +97,7 @@ func (h *Handler) GetAppUserById(w http.ResponseWriter, r *http.Request) {
 	jsonData, err := json.Marshal(userDto)
 	if err != nil {
 		log.Errorf("Error marshalling json: %v", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -116,9 +117,16 @@ func (h *Handler) CreateAppUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	userDao, err := h.AppUserService.CreateAppUser(r.Context(), createAppUserParams)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+	if err != nil { // TODO: Refactor this error handling
+		var duplicateKeyError *repository.DuplicateKeyError
+
+		if errors.As(err, &duplicateKeyError) {
+			http.Error(w, err.Error(), http.StatusConflict)
+			return
+		} else {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
 	}
 
 	userDto := response.ConvertDbRow(userDao)
