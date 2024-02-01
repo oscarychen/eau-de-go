@@ -1,9 +1,9 @@
 package main
 
 import (
-	appuser "eau-de-go/internal/app_user"
 	"eau-de-go/internal/db"
 	"eau-de-go/internal/repository"
+	"eau-de-go/internal/service"
 	"eau-de-go/internal/transport/http"
 	log "github.com/sirupsen/logrus"
 )
@@ -21,7 +21,7 @@ func Run() error {
 	// database.Ping(context.Background())
 
 	queries := repository.New(database.Client)
-	appUserService := appuser.NewAppUserService(queries)
+	appUserService := service.NewAppUserService(queries)
 	handler := http.NewHandler(appUserService)
 
 	if err := handler.Serve(); err != nil {
