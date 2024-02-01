@@ -1,10 +1,10 @@
-package app_user
+package service
 
 import (
 	"context"
-	"eau-de-go/internal/jwt_auth"
 	"eau-de-go/internal/repository"
-	"eau-de-go/internal/utils"
+	"eau-de-go/pkg/jwt"
+	passwordPkg "eau-de-go/pkg/password"
 	"errors"
 	"github.com/google/uuid"
 	"github.com/lib/pq"
@@ -28,7 +28,7 @@ func NewAppUserService(appUserStore AppUserStore) *AppUserService {
 }
 
 func (service *AppUserService) CreateAppUser(ctx context.Context, appUserParams repository.CreateAppUserParams) (repository.AppUser, error) {
-	hashedPassword, err := utils.HashPassword(appUserParams.Password)
+	hashedPassword, err := passwordPkg.HashPassword(appUserParams.Password)
 	appUserParams.Password = string(hashedPassword)
 	dao, err := service.AppUserStore.CreateAppUser(ctx, appUserParams)
 	if err != nil { // TODO: Refactor this error handling
@@ -69,7 +69,7 @@ func (service *AppUserService) Login(ctx context.Context, username string, passw
 		log.Error(err)
 		return repository.AppUser{}, err
 	}
-	if err := utils.CheckPassword(password, []byte(dao.Password)); err != nil {
+	if err := passwordPkg.CheckPassword(password, []byte(dao.Password)); err != nil {
 		log.Error(err)
 		return repository.AppUser{}, err
 	}
@@ -88,13 +88,13 @@ func (service *AppUserService) GetAppUserTokens(appUser repository.AppUser) (str
 	claims["last_login"] = appUser.LastLogin
 	claims["date_joined"] = appUser.DateJoined
 
-	refreshToken, refreshTokenClaims, err := jwt_auth.CreateRefreshToken(claims)
+	refreshToken, refreshTokenClaims, err := jwt.CreateRefreshToken(claims)
 	if err != nil {
 		log.Error(err)
 		return "", nil, "", nil, err
 	}
 
-	accessToken, accessTokenClaims, err := jwt_auth.CreateAccessToken(claims)
+	accessToken, accessTokenClaims, err := jwt.CreateAccessToken(claims)
 	if err != nil {
 		log.Error(err)
 		return "", nil, "", nil, err
@@ -103,5 +103,5 @@ func (service *AppUserService) GetAppUserTokens(appUser repository.AppUser) (str
 }
 
 func (service *AppUserService) RefreshToken(ctx context.Context, refreshToken string) (string, map[string]interface{}, error) {
-	return jwt_auth.CreateAccessTokenFromRefreshToken(refreshToken)
+	return jwt.CreateAccessTokenFromRefreshToken(refreshToken)
 }

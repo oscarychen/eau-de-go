@@ -1,8 +1,8 @@
-package jwt_auth_test
+package jwt_test
 
 import (
-	"eau-de-go/internal/jwt_auth"
 	"eau-de-go/internal/settings"
+	"eau-de-go/pkg/jwt"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
@@ -12,7 +12,7 @@ func TestCreateRefreshToken(t *testing.T) {
 	claims := map[string]interface{}{
 		"username": "testuser",
 	}
-	token, tokenClaims, err := jwt_auth.CreateRefreshToken(claims)
+	token, tokenClaims, err := jwt.CreateRefreshToken(claims)
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
@@ -33,11 +33,11 @@ func TestCreateAccessTokenFromRefreshToken(t *testing.T) {
 	claims := map[string]interface{}{
 		"username": "testuser",
 	}
-	refreshToken, _, err := jwt_auth.CreateRefreshToken(claims)
+	refreshToken, _, err := jwt.CreateRefreshToken(claims)
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
-	accessToken, accessTokenClaims, err := jwt_auth.CreateAccessTokenFromRefreshToken(refreshToken)
+	accessToken, accessTokenClaims, err := jwt.CreateAccessTokenFromRefreshToken(refreshToken)
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
@@ -56,7 +56,7 @@ func TestCreateAccessTokenFromRefreshToken(t *testing.T) {
 }
 
 func TestCreateAccessTokenFromInvalidRefreshToken(t *testing.T) {
-	_, _, err := jwt_auth.CreateAccessTokenFromRefreshToken("invalidToken")
+	_, _, err := jwt.CreateAccessTokenFromRefreshToken("invalidToken")
 	if err == nil {
 		t.Error("Expected error for invalid refresh token")
 	}
@@ -66,11 +66,11 @@ func TestDecodeToken(t *testing.T) {
 	claims := map[string]interface{}{
 		"username": "testuser",
 	}
-	token, _, err := jwt_auth.CreateRefreshToken(claims)
+	token, _, err := jwt.CreateRefreshToken(claims)
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
-	decodedClaims, err := jwt_auth.DecodeToken(jwt_auth.Refresh, token)
+	decodedClaims, err := jwt.DecodeToken(jwt.Refresh, token)
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
@@ -81,7 +81,7 @@ func TestDecodeToken(t *testing.T) {
 }
 
 func TestDecodeInvalidToken(t *testing.T) {
-	_, err := jwt_auth.DecodeToken(jwt_auth.Refresh, "invalidToken")
+	_, err := jwt.DecodeToken(jwt.Refresh, "invalidToken")
 	if err == nil {
 		t.Error("Expected error for invalid token")
 	}
@@ -92,18 +92,18 @@ func TestTokenExpiry(t *testing.T) {
 		"username": "testuser",
 	}
 
-	jwt_auth.NowFunc = func() time.Time {
+	jwt.NowFunc = func() time.Time {
 		return time.Now().Add(-settings.RefreshTokenLife - time.Minute)
 	}
 
-	token, _, err := jwt_auth.CreateRefreshToken(claims)
+	token, _, err := jwt.CreateRefreshToken(claims)
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
 
-	_, err = jwt_auth.DecodeToken(jwt_auth.Refresh, token)
+	_, err = jwt.DecodeToken(jwt.Refresh, token)
 	if err == nil {
 		t.Error("Expected error for expired token")
 	}
-	jwt_auth.NowFunc = time.Now
+	jwt.NowFunc = time.Now
 }
