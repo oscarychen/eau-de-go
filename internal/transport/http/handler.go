@@ -35,6 +35,7 @@ func NewHandler(appUserService AppUserService) *Handler {
 func (h *Handler) mapRoutes() {
 
 	h.Router.HandleFunc("/api/user/login/", h.Login).Methods("POST")
+	h.Router.HandleFunc("/api/user/token-refresh/", h.TokenRefresh).Methods("POST")
 	h.Router.HandleFunc("/api/user/{id}/", h.GetAppUserById).Methods("GET")
 	h.Router.HandleFunc("/api/user/", h.CreateAppUser).Methods("POST")
 }
