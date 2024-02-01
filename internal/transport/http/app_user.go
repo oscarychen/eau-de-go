@@ -21,7 +21,7 @@ type AppUserService interface {
 	GetAppUserById(ctx context.Context, ID uuid.UUID) (repository.AppUser, error)
 	CreateAppUser(ctx context.Context, appUser repository.CreateAppUserParams) (repository.AppUser, error)
 	GetAppUserTokens(appUser repository.AppUser) (string, map[string]interface{}, string, map[string]interface{}, error)
-	RefreshToken(ctx context.Context, refreshToken string) (string, map[string]interface{}, error)
+	RefreshToken(ctx context.Context, refreshToken string) (string, map[string]interface{}, repository.AppUser, error)
 }
 
 var refreshTokenCookieName = "refresh"
@@ -88,25 +88,14 @@ func (h *Handler) TokenRefresh(w http.ResponseWriter, r *http.Request) {
 	}
 
 	refreshToken := refreshTokenCookie.Value
-	accessToken, accessTokenClaims, err := h.AppUserService.RefreshToken(r.Context(), refreshToken)
+	accessToken, _, appUser, err := h.AppUserService.RefreshToken(r.Context(), refreshToken)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
 
-	userId, err := uuid.Parse(accessTokenClaims["id"].(string))
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
-		return
-	}
+	userDto := response.ConvertDbRow(appUser)
 
-	userDao, err := h.AppUserService.GetAppUserById(r.Context(), userId)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
-		return
-	}
-
-	userDto := response.ConvertDbRow(userDao)
 	responseData := response.AppUserLoginResponse{
 		AppUserDto:  userDto,
 		AccessToken: accessToken,

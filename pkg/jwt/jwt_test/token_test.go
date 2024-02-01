@@ -29,39 +29,6 @@ func TestCreateRefreshToken(t *testing.T) {
 	assert.Nil(t, claims["exp"], "Expected claims argument to not be modified")
 }
 
-func TestCreateAccessTokenFromRefreshToken(t *testing.T) {
-	claims := map[string]interface{}{
-		"username": "testuser",
-	}
-	refreshToken, _, err := jwt.CreateRefreshToken(claims)
-	if err != nil {
-		t.Errorf("Unexpected error: %v", err)
-	}
-	accessToken, accessTokenClaims, err := jwt.CreateAccessTokenFromRefreshToken(refreshToken)
-	if err != nil {
-		t.Errorf("Unexpected error: %v", err)
-	}
-	if accessToken == "" {
-		t.Error("Expected token to be non-empty")
-	}
-	assert.Equal(t, claims["username"], accessTokenClaims["username"], "Expected username to be 'testuser'")
-	assert.NotNil(t, accessTokenClaims["iat"], "Expected iat to be set")
-	assert.NotNil(t, accessTokenClaims["jti"], "Expected jti to be set")
-	assert.NotNil(t, accessTokenClaims["exp"], "Expected exp to be set")
-
-	assert.Nil(t, claims["iat"], "Expected claims argument to not be modified")
-	assert.Nil(t, claims["jti"], "Expected claims argument to not be modified")
-	assert.Nil(t, claims["exp"], "Expected claims argument to not be modified")
-
-}
-
-func TestCreateAccessTokenFromInvalidRefreshToken(t *testing.T) {
-	_, _, err := jwt.CreateAccessTokenFromRefreshToken("invalidToken")
-	if err == nil {
-		t.Error("Expected error for invalid refresh token")
-	}
-}
-
 func TestDecodeToken(t *testing.T) {
 	claims := map[string]interface{}{
 		"username": "testuser",
@@ -77,7 +44,6 @@ func TestDecodeToken(t *testing.T) {
 	if decodedClaims["username"] != "testuser" {
 		t.Errorf("Expected username to be 'testuser', got '%v'", decodedClaims["username"])
 	}
-
 }
 
 func TestDecodeInvalidToken(t *testing.T) {

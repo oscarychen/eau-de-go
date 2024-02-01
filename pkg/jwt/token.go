@@ -73,31 +73,20 @@ func validateJti(claims map[string]interface{}) error {
 }
 
 func CreateRefreshToken(claims map[string]interface{}) (string, map[string]interface{}, error) {
-	tokenClaims := copyTokenClaims(claims)
+	tokenClaims := CopyTokenClaims(claims)
 	tokenClaims["token_type"] = Refresh
 	tokenClaims["exp"] = NowFunc().Add(settings.RefreshTokenLife).Unix()
 	return createToken(tokenClaims)
 }
 
 func CreateAccessToken(claims map[string]interface{}) (string, map[string]interface{}, error) {
-	tokenClaims := copyTokenClaims(claims)
+	tokenClaims := CopyTokenClaims(claims)
 	tokenClaims["token_type"] = Access
 	tokenClaims["exp"] = NowFunc().Add(settings.AccessTokenLife).Unix()
 	return createToken(tokenClaims)
 }
 
-func CreateAccessTokenFromRefreshToken(refreshToken string) (string, map[string]interface{}, error) {
-	refreshTokenClaims, err := DecodeToken(Refresh, refreshToken)
-	if err != nil {
-		return "", nil, err
-	}
-	claims := copyTokenClaims(refreshTokenClaims)
-	claims["token_type"] = Access
-	claims["exp"] = NowFunc().Add(settings.AccessTokenLife).Unix()
-	return createToken(claims)
-}
-
-func copyTokenClaims(claims map[string]interface{}) map[string]interface{} {
+func CopyTokenClaims(claims map[string]interface{}) map[string]interface{} {
 	copiedClaimns := make(map[string]interface{})
 	for key, value := range claims {
 		if key != "exp" && key != "iat" && key != "jti" && key != "token_type" {

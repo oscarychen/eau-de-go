@@ -76,7 +76,7 @@ func (service *AppUserService) Login(ctx context.Context, username string, passw
 	return dao, nil
 }
 
-func (service *AppUserService) GetAppUserTokens(appUser repository.AppUser) (string, map[string]interface{}, string, map[string]interface{}, error) {
+func (service *AppUserService) makeTokenClaimMap(appUser repository.AppUser) map[string]interface{} {
 	claims := make(map[string]interface{})
 	claims["id"] = appUser.ID
 	claims["username"] = appUser.Username
@@ -87,6 +87,11 @@ func (service *AppUserService) GetAppUserTokens(appUser repository.AppUser) (str
 	claims["is_staff"] = appUser.IsStaff
 	claims["last_login"] = appUser.LastLogin
 	claims["date_joined"] = appUser.DateJoined
+	return claims
+}
+
+func (service *AppUserService) GetAppUserTokens(appUser repository.AppUser) (string, map[string]interface{}, string, map[string]interface{}, error) {
+	claims := service.makeTokenClaimMap(appUser)
 
 	refreshToken, refreshTokenClaims, err := jwt.CreateRefreshToken(claims)
 	if err != nil {
@@ -102,6 +107,26 @@ func (service *AppUserService) GetAppUserTokens(appUser repository.AppUser) (str
 	return refreshToken, refreshTokenClaims, accessToken, accessTokenClaims, nil
 }
 
-func (service *AppUserService) RefreshToken(ctx context.Context, refreshToken string) (string, map[string]interface{}, error) {
-	return jwt.CreateAccessTokenFromRefreshToken(refreshToken)
+func (service *AppUserService) RefreshToken(ctx context.Context, refreshToken string) (string, map[string]interface{}, repository.AppUser, error) {
+	refreshTokenClaims, err := jwt.DecodeToken(jwt.Refresh, refreshToken)
+	if err != nil {
+		log.Error(err)
+		return "", nil, repository.AppUser{}, err
+	}
+
+	userId, err := uuid.Parse(refreshTokenClaims["id"].(string))
+	if err != nil {
+		log.Error(err)
+		return "", nil, repository.AppUser{}, err
+	}
+
+	appUser, err := service.GetAppUserById(ctx, userId)
+	tokenClaims := service.makeTokenClaimMap(appUser)
+	accessToken, claims, err := jwt.CreateAccessToken(tokenClaims)
+	if err != nil {
+		log.Error(err)
+		return "", nil, repository.AppUser{}, err
+	}
+
+	return accessToken, claims, appUser, nil
 }
