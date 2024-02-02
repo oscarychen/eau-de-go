@@ -11,13 +11,14 @@ import (
 var (
 	DbHost              string
 	DbPort              string
-	SslMode             string
+	DbSslMode           string
 	DbUsername          string
 	DbName              string
 	DbPassword          string
 	RefreshTokenLife    time.Duration
 	AccessTokenLife     time.Duration
 	RefreshCookieSecure bool
+	ServerPort          string
 )
 
 func init() {
@@ -29,10 +30,11 @@ func init() {
 
 	DbHost = getEnv("DB_HOST", "localhost")
 	DbPort = getEnv("DB_PORT", "5432")
-	SslMode = getEnv("SSL_MODE", "disable")
+	DbSslMode = getEnv("DB_SSL_MODE", "disable")
 	DbUsername = getEnv("DB_USERNAME", "postgres")
 	DbName = getEnv("DB_NAME", "eau-de-go")
 	DbPassword = getEnv("DB_PASSWORD", "")
+	ServerPort = getEnv("SERVER_PORT", "8080")
 
 	if refreshTokenLifeMinutes, err := strconv.Atoi(getEnv("REFRESH_TOKEN_LIFE_MINUTES", "10080")); err == nil {
 		RefreshTokenLife = time.Minute * time.Duration(refreshTokenLifeMinutes)
