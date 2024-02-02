@@ -17,3 +17,6 @@
 .idea/
 
 .env
+.env.docker
+
+bin/
