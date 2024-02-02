@@ -66,12 +66,10 @@ func (service *AppUserService) GetAppUserByUsername(ctx context.Context, usernam
 func (service *AppUserService) Login(ctx context.Context, username string, password string) (repository.AppUser, error) {
 	dao, err := service.AppUserStore.GetAppUserByUsername(ctx, username)
 	if err != nil {
-		log.Error(err)
 		return repository.AppUser{}, err
 	}
 	if err := passwordPkg.CheckPassword(password, []byte(dao.Password)); err != nil {
-		log.Error(err)
-		return repository.AppUser{}, err
+		return repository.AppUser{}, &repository.IncorrectUserCredentialError{}
 	}
 	return dao, nil
 }
