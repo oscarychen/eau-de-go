@@ -24,7 +24,12 @@ func (d *Database) MigrateDB() error {
 		log.Error(err.Error())
 		return err
 	}
-	m.Up()
+	err = m.Up()
+	if err != nil {
+		log.Error(err.Error())
+		return err
+	}
+	log.Info("migration complete")
 
 	return nil
 }

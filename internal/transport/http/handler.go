@@ -2,7 +2,9 @@ package http
 
 import (
 	"context"
+	"eau-de-go/internal/settings"
 	"eau-de-go/internal/transport/middleware"
+	"fmt"
 	"github.com/gorilla/mux"
 	"log"
 	"net/http"
@@ -31,7 +33,7 @@ func NewHandler(appUserService AppUserService) *Handler {
 	h.Router.Use(middleware.JSONMiddleware)
 
 	h.Server = &http.Server{
-		Addr:    "0.0.0.0:8080",
+		Addr:    fmt.Sprintf("0.0.0.0:%s", settings.ServerPort),
 		Handler: h.Router,
 	}
 	return h

@@ -22,7 +22,7 @@ func NewDatabase() (*Database, error) {
 		"host=%s port=%s sslmode=%s user=%s dbname=%s password=%s",
 		settings.DbHost,
 		settings.DbPort,
-		settings.SslMode,
+		settings.DbSslMode,
 		settings.DbUsername,
 		settings.DbName,
 		settings.DbPassword,
