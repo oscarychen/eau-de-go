@@ -12,10 +12,11 @@ import (
 )
 
 type Handler struct {
-	Router         *mux.Router
-	AppUserService AppUserService
-	AuthService    AuthService
-	Server         *http.Server
+	Router          *mux.Router
+	ProtectedRouter *mux.Router
+	AppUserService  AppUserService
+	AuthService     AuthService
+	Server          *http.Server
 }
 
 func NewHandler(appUserService AppUserService) *Handler {
@@ -23,8 +24,12 @@ func NewHandler(appUserService AppUserService) *Handler {
 		AppUserService: appUserService,
 	}
 	h.Router = mux.NewRouter()
+	h.ProtectedRouter = h.Router.PathPrefix("/api").Subrouter()
+	h.ProtectedRouter.Use(middleware.JwtAuthMiddleware)
+
 	h.mapRoutes()
 	h.Router.Use(middleware.JSONMiddleware)
+
 	h.Server = &http.Server{
 		Addr:    "0.0.0.0:8080",
 		Handler: h.Router,
@@ -34,10 +39,11 @@ func NewHandler(appUserService AppUserService) *Handler {
 
 func (h *Handler) mapRoutes() {
 
-	h.Router.HandleFunc("/api/user/login/", h.Login).Methods("POST")
-	h.Router.HandleFunc("/api/user/token-refresh/", h.TokenRefresh).Methods("POST")
-	h.Router.HandleFunc("/api/user/{id}/", h.GetAppUserById).Methods("GET")
-	h.Router.HandleFunc("/api/user/", h.CreateAppUser).Methods("POST")
+	h.Router.HandleFunc("/auth/login/", h.Login).Methods("POST")
+	h.Router.HandleFunc("/auth/token-refresh/", h.TokenRefresh).Methods("POST")
+	h.Router.HandleFunc("/auth/sign-up/", h.CreateAppUser).Methods("POST")
+
+	h.ProtectedRouter.HandleFunc("/user/{id}/", h.GetAppUserById).Methods("GET")
 }
 
 func (h *Handler) Serve() error {

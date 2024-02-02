@@ -25,7 +25,7 @@ type AppUserService interface {
 }
 
 var refreshTokenCookieName = "refresh"
-var refreshTokenCookiePath = "/api/user/token-refresh"
+var refreshTokenCookiePath = "/auth/token-refresh"
 
 func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 
@@ -83,14 +83,14 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) TokenRefresh(w http.ResponseWriter, r *http.Request) {
 	refreshTokenCookie, err := r.Cookie(refreshTokenCookieName)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
 
 	refreshToken := refreshTokenCookie.Value
 	accessToken, _, appUser, err := h.AppUserService.RefreshToken(r.Context(), refreshToken)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
+		http.Error(w, "Invalid token", http.StatusUnauthorized)
 		return
 	}
 
