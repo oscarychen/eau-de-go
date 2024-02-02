@@ -6,6 +6,11 @@ import (
 	"fmt"
 )
 
+type RsaKeyPair interface {
+	GetVerificationKey() (*rsa.PublicKey, error)
+	GetSigningKey() (*rsa.PrivateKey, error)
+}
+
 type inMemoryRsaKeyPair struct {
 	signingKey      *rsa.PrivateKey
 	verificationKey *rsa.PublicKey
@@ -13,7 +18,7 @@ type inMemoryRsaKeyPair struct {
 
 var inMemoryRsaKeyPairInstance *inMemoryRsaKeyPair
 
-func GetInMemoryRsaKeyPair() *inMemoryRsaKeyPair {
+func GetInMemoryRsaKeyPair() RsaKeyPair {
 	if inMemoryRsaKeyPairInstance == nil {
 		inMemoryRsaKeyPairInstance = &inMemoryRsaKeyPair{}
 	}
