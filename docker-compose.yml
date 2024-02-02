@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:16.1-alpine
+    ports:
+      - '5432:5432'
+    environment:
+      - POSTGRES_DB=eau-de-go
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    networks:
+      - eau-de-go
+    volumes:
+      - database_postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile.migrate
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - .env.docker
+    networks:
+      - eau-de-go
+
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile.server
+    env_file:
+      - .env.docker
+    ports:
+      - '8080:8080'
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_started
+    networks:
+      - eau-de-go
+
+volumes:
+  database_postgres:
+
+networks:
+  eau-de-go:
+    driver: bridge
