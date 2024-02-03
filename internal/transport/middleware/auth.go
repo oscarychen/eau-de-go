@@ -2,7 +2,7 @@ package middleware
 
 import (
 	"context"
-	"eau-de-go/pkg/jwt"
+	"eau-de-go/pkg/jwt_util"
 	"fmt"
 	"net/http"
 	"strings"
@@ -32,7 +32,7 @@ func JwtAuthMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		claims, err := jwt.DecodeToken(jwt.Access, accessTokenString)
+		claims, err := jwt_util.DecodeToken(jwt_util.Access, accessTokenString)
 		if err != nil {
 			http.Error(w, "Invalid token", http.StatusUnauthorized)
 			return

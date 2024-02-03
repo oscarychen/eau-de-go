@@ -1,4 +1,4 @@
-package jwt
+package jwt_util
 
 import (
 	"eau-de-go/internal/settings"

@@ -2,7 +2,7 @@ package jwt_test
 
 import (
 	"eau-de-go/internal/settings"
-	"eau-de-go/pkg/jwt"
+	"eau-de-go/pkg/jwt_util"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
@@ -12,7 +12,7 @@ func TestCreateRefreshToken(t *testing.T) {
 	claims := map[string]interface{}{
 		"username": "testuser",
 	}
-	token, tokenClaims, err := jwt.CreateRefreshToken(claims)
+	token, tokenClaims, err := jwt_util.CreateRefreshToken(claims)
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
@@ -33,11 +33,11 @@ func TestDecodeToken(t *testing.T) {
 	claims := map[string]interface{}{
 		"username": "testuser",
 	}
-	token, _, err := jwt.CreateRefreshToken(claims)
+	token, _, err := jwt_util.CreateRefreshToken(claims)
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
-	decodedClaims, err := jwt.DecodeToken(jwt.Refresh, token)
+	decodedClaims, err := jwt_util.DecodeToken(jwt_util.Refresh, token)
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
@@ -47,7 +47,7 @@ func TestDecodeToken(t *testing.T) {
 }
 
 func TestDecodeInvalidToken(t *testing.T) {
-	_, err := jwt.DecodeToken(jwt.Refresh, "invalidToken")
+	_, err := jwt_util.DecodeToken(jwt_util.Refresh, "invalidToken")
 	if err == nil {
 		t.Error("Expected error for invalid token")
 	}
@@ -58,18 +58,18 @@ func TestTokenExpiry(t *testing.T) {
 		"username": "testuser",
 	}
 
-	jwt.NowFunc = func() time.Time {
+	jwt_util.NowFunc = func() time.Time {
 		return time.Now().Add(-settings.RefreshTokenLife - time.Minute)
 	}
 
-	token, _, err := jwt.CreateRefreshToken(claims)
+	token, _, err := jwt_util.CreateRefreshToken(claims)
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
 
-	_, err = jwt.DecodeToken(jwt.Refresh, token)
+	_, err = jwt_util.DecodeToken(jwt_util.Refresh, token)
 	if err == nil {
 		t.Error("Expected error for expired token")
 	}
-	jwt.NowFunc = time.Now
+	jwt_util.NowFunc = time.Now
 }
