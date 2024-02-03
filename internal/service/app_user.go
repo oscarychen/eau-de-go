@@ -3,8 +3,8 @@ package service
 import (
 	"context"
 	"eau-de-go/internal/repository"
-	"eau-de-go/pkg/jwt"
-	passwordPkg "eau-de-go/pkg/password"
+	"eau-de-go/pkg/jwt_util"
+	"eau-de-go/pkg/password_util"
 	"errors"
 	"github.com/google/uuid"
 	"github.com/lib/pq"
@@ -28,7 +28,7 @@ func NewAppUserService(appUserStore AppUserStore) *AppUserService {
 }
 
 func (service *AppUserService) CreateAppUser(ctx context.Context, appUserParams repository.CreateAppUserParams) (repository.AppUser, error) {
-	hashedPassword, err := passwordPkg.HashPassword(appUserParams.Password)
+	hashedPassword, err := password_util.HashPassword(appUserParams.Password)
 	appUserParams.Password = string(hashedPassword)
 	dao, err := service.AppUserStore.CreateAppUser(ctx, appUserParams)
 	if err != nil { // TODO: Refactor this error handling
@@ -68,7 +68,7 @@ func (service *AppUserService) Login(ctx context.Context, username string, passw
 	if err != nil {
 		return repository.AppUser{}, err
 	}
-	if err := passwordPkg.CheckPassword(password, []byte(dao.Password)); err != nil {
+	if err := password_util.CheckPassword(password, []byte(dao.Password)); err != nil {
 		return repository.AppUser{}, &repository.IncorrectUserCredentialError{}
 	}
 	return dao, nil
@@ -91,13 +91,13 @@ func (service *AppUserService) makeTokenClaimMap(appUser repository.AppUser) map
 func (service *AppUserService) GetAppUserTokens(appUser repository.AppUser) (string, map[string]interface{}, string, map[string]interface{}, error) {
 	claims := service.makeTokenClaimMap(appUser)
 
-	refreshToken, refreshTokenClaims, err := jwt.CreateRefreshToken(claims)
+	refreshToken, refreshTokenClaims, err := jwt_util.CreateRefreshToken(claims)
 	if err != nil {
 		log.Error(err)
 		return "", nil, "", nil, err
 	}
 
-	accessToken, accessTokenClaims, err := jwt.CreateAccessToken(claims)
+	accessToken, accessTokenClaims, err := jwt_util.CreateAccessToken(claims)
 	if err != nil {
 		log.Error(err)
 		return "", nil, "", nil, err
@@ -106,7 +106,7 @@ func (service *AppUserService) GetAppUserTokens(appUser repository.AppUser) (str
 }
 
 func (service *AppUserService) RefreshToken(ctx context.Context, refreshToken string) (string, map[string]interface{}, repository.AppUser, error) {
-	refreshTokenClaims, err := jwt.DecodeToken(jwt.Refresh, refreshToken)
+	refreshTokenClaims, err := jwt_util.DecodeToken(jwt_util.Refresh, refreshToken)
 	if err != nil {
 		log.Error(err)
 		return "", nil, repository.AppUser{}, err
@@ -120,7 +120,7 @@ func (service *AppUserService) RefreshToken(ctx context.Context, refreshToken st
 
 	appUser, err := service.GetAppUserById(ctx, userId)
 	tokenClaims := service.makeTokenClaimMap(appUser)
-	accessToken, claims, err := jwt.CreateAccessToken(tokenClaims)
+	accessToken, claims, err := jwt_util.CreateAccessToken(tokenClaims)
 	if err != nil {
 		log.Error(err)
 		return "", nil, repository.AppUser{}, err
