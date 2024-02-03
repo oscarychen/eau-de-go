@@ -1,4 +1,4 @@
-package request
+package request_dto
 
 import (
 	"database/sql"
