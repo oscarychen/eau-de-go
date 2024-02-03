@@ -4,8 +4,8 @@ import (
 	"context"
 	"eau-de-go/internal/repository"
 	"eau-de-go/internal/settings"
-	"eau-de-go/internal/transport/http/dto/request"
-	"eau-de-go/internal/transport/http/dto/response"
+	"eau-de-go/internal/transport/http/request_dto"
+	"eau-de-go/internal/transport/http/response_dto"
 	"encoding/json"
 	"errors"
 	"github.com/google/uuid"
@@ -34,7 +34,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	var loginDto request.AppUserLoginRequestDto
+	var loginDto request_dto.AppUserLoginRequestDto
 	err = json.Unmarshal(bodyBytes, &loginDto)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -60,8 +60,8 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 	http.SetCookie(w, &cookie)
 
-	userDto := response.ConvertDbRow(userDao)
-	responseData := response.AppUserLoginResponse{
+	userDto := response_dto.ConvertDbRow(userDao)
+	responseData := response_dto.AppUserLoginResponse{
 		AppUserDto:  userDto,
 		AccessToken: accessToken,
 	}
@@ -94,9 +94,9 @@ func (h *Handler) TokenRefresh(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userDto := response.ConvertDbRow(appUser)
+	userDto := response_dto.ConvertDbRow(appUser)
 
-	responseData := response.AppUserLoginResponse{
+	responseData := response_dto.AppUserLoginResponse{
 		AppUserDto:  userDto,
 		AccessToken: accessToken,
 	}
@@ -130,7 +130,7 @@ func (h *Handler) GetAppUserById(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userDto := response.ConvertDbRow(userDao)
+	userDto := response_dto.ConvertDbRow(userDao)
 
 	jsonData, err := json.Marshal(userDto)
 	if err != nil {
@@ -148,7 +148,7 @@ func (h *Handler) GetAppUserById(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) CreateAppUser(w http.ResponseWriter, r *http.Request) {
 
-	createAppUserParams, err := request.MakeCreateAppUserParamsFromRequest(r)
+	createAppUserParams, err := request_dto.MakeCreateAppUserParamsFromRequest(r)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -167,7 +167,7 @@ func (h *Handler) CreateAppUser(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	userDto := response.ConvertDbRow(userDao)
+	userDto := response_dto.ConvertDbRow(userDao)
 
 	jsonData, err := json.Marshal(userDto)
 	if err != nil {

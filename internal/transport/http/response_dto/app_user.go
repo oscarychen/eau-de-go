@@ -1,4 +1,4 @@
-package response
+package response_dto
 
 import (
 	"eau-de-go/internal/repository"
@@ -7,6 +7,7 @@ import (
 
 type AppUserDto struct {
 	ID        uuid.UUID
+	Username  string
 	FirstName *string
 	LastName  *string
 	Email     string
@@ -36,6 +37,7 @@ func ConvertDbRow(user repository.AppUser) AppUserDto {
 
 	return AppUserDto{
 		ID:        user.ID,
+		Username:  user.Username,
 		FirstName: firstName,
 		LastName:  lastName,
 		Email:     user.Email,
