@@ -17,7 +17,6 @@ type Handler struct {
 	Router          *mux.Router
 	ProtectedRouter *mux.Router
 	AppUserService  AppUserService
-	AuthService     AuthService
 	Server          *http.Server
 }
 
