@@ -1,0 +1,46 @@
+### Get a user by id
+GET {{server_url}}/api/user/{{user_id}}/
+Accept: application/json
+Authorization: Bearer {{access_token}}
+
+
+### Create a user
+POST {{server_url}}/auth/sign-up/
+Content-Type: application/json
+
+{
+  "UserName": "{{username}}",
+  "FirstName": "any",
+  "LastName": "body",
+  "Email": "random@email.com",
+  "Password": "{{password}}"
+}
+
+> {%
+    client.global.set("user_id", response.body.ID);
+%}
+
+
+### Login
+POST {{server_url}}/auth/login/
+Content-Type: application/json
+
+{
+  "UserName": "{{username}}",
+  "Password": "{{password}}"
+}
+
+> {%
+    client.global.set("access_token", response.body.AccessToken);
+    client.global.set("user_id", response.body.ID);
+%}
+
+
+### TokenRefresh
+POST {{server_url}}/auth/token-refresh/
+
+> {%
+    client.global.set("access_token", response.body.AccessToken);
+    client.global.set("user_id", response.body.ID);
+%}
+
