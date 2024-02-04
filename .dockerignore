@@ -1,2 +1,4 @@
 .github
 .gitignore
+docs/
+*_test.go
