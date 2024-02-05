@@ -53,11 +53,16 @@ func MakeUpdateAppUserParamsFromRequest(r *http.Request) (repository.UpdateAppUs
 	var dto UpdateAppUserRequestDto
 	var firstName, lastName sql.NullString
 
-	jwtClaims := r.Context().Value("jwt_claims").(map[string]interface{})
+	jwtClaims, ok := r.Context().Value("jwt_claims").(map[string]interface{})
+	if !ok {
+		return repository.UpdateAppUserParams{}, &jwt_util.InvalidTokenError{}
+	}
+
 	idStr, ok := jwtClaims["id"].(string)
 	if !ok {
 		return repository.UpdateAppUserParams{}, &jwt_util.InvalidTokenError{}
 	}
+
 	userId, err := uuid.Parse(idStr)
 	if err != nil {
 		return repository.UpdateAppUserParams{}, &jwt_util.InvalidTokenError{}
@@ -67,6 +72,7 @@ func MakeUpdateAppUserParamsFromRequest(r *http.Request) (repository.UpdateAppUs
 	if err != nil {
 		return repository.UpdateAppUserParams{}, err
 	}
+
 	err = json.Unmarshal(bodyBytes, &dto)
 	if err != nil {
 		return repository.UpdateAppUserParams{}, err
@@ -77,6 +83,7 @@ func MakeUpdateAppUserParamsFromRequest(r *http.Request) (repository.UpdateAppUs
 	} else {
 		firstName = sql.NullString{String: *dto.FirstName, Valid: true}
 	}
+
 	if dto.LastName == nil {
 		lastName = sql.NullString{Valid: false}
 	} else {
