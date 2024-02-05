@@ -6,3 +6,4 @@ sql:
     gen:
       go:
         out: "internal/repository/"
+        emit_json_tags: true

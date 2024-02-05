@@ -26,11 +26,11 @@ INSERT INTO app_user (
 `
 
 type CreateAppUserParams struct {
-	Username  string
-	Email     string
-	Password  string
-	FirstName string
-	LastName  string
+	Username  string `json:"username"`
+	Email     string `json:"email"`
+	Password  string `json:"password"`
+	FirstName string `json:"first_name"`
+	LastName  string `json:"last_name"`
 }
 
 func (q *Queries) CreateAppUser(ctx context.Context, arg CreateAppUserParams) (AppUser, error) {
@@ -173,9 +173,9 @@ WHERE id = $3
 `
 
 type UpdateAppUserParams struct {
-	FirstName sql.NullString
-	LastName  sql.NullString
-	ID        uuid.UUID
+	FirstName sql.NullString `json:"first_name"`
+	LastName  sql.NullString `json:"last_name"`
+	ID        uuid.UUID      `json:"id"`
 }
 
 func (q *Queries) UpdateAppUser(ctx context.Context, arg UpdateAppUserParams) (AppUser, error) {
@@ -204,8 +204,8 @@ WHERE id = $1
 `
 
 type UpdateAppUserLastLoginParams struct {
-	ID        uuid.UUID
-	LastLogin sql.NullTime
+	ID        uuid.UUID    `json:"id"`
+	LastLogin sql.NullTime `json:"last_login"`
 }
 
 func (q *Queries) UpdateAppUserLastLogin(ctx context.Context, arg UpdateAppUserLastLoginParams) (AppUser, error) {
@@ -234,8 +234,8 @@ WHERE id = $1
 `
 
 type UpdateAppUserPasswordParams struct {
-	ID       uuid.UUID
-	Password string
+	ID       uuid.UUID `json:"id"`
+	Password string    `json:"password"`
 }
 
 func (q *Queries) UpdateAppUserPassword(ctx context.Context, arg UpdateAppUserPasswordParams) (AppUser, error) {
