@@ -9,14 +9,14 @@ POST {{server_url}}/auth/sign-up/
 Content-Type: application/json
 
 {
-  "UserName": "{{username}}",
-  "LastName": "body",
-  "Email": "random@email.com",
-  "Password": "{{password}}"
+  "userName": "{{username}}",
+  "lastName": "body",
+  "email": "{{email}}",
+  "password": "{{password}}"
 }
 
 > {%
-    client.global.set("user_id", response.body.ID);
+    client.global.set("user_id", response.body.id);
 %}
 
 
@@ -25,13 +25,13 @@ POST {{server_url}}/auth/login/
 Content-Type: application/json
 
 {
-  "UserName": "{{username}}",
-  "Password": "{{password}}"
+  "userName": "{{username}}",
+  "password": "{{password}}"
 }
 
 > {%
-    client.global.set("access_token", response.body.AccessToken);
-    client.global.set("user_id", response.body.ID);
+    client.global.set("access_token", response.body.access_token);
+    client.global.set("user_id", response.body.id);
 %}
 
 
@@ -39,8 +39,8 @@ Content-Type: application/json
 POST {{server_url}}/auth/token-refresh/
 
 > {%
-    client.global.set("access_token", response.body.AccessToken);
-    client.global.set("user_id", response.body.ID);
+    client.global.set("access_token", response.body.access_token);
+    client.global.set("user_id", response.body.id);
 %}
 
 ### User self update
@@ -48,6 +48,6 @@ PATCH {{server_url}}/api/user/me/
 Authorization: Bearer {{access_token}}
 
 {
-  "FirstName": "new name",
-  "LastName": "new last name"
+  "first_name": "new firstname
+  "last_name": "new lastname"
 }

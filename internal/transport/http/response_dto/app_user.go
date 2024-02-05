@@ -6,19 +6,19 @@ import (
 )
 
 type AppUserDto struct {
-	ID        uuid.UUID
-	Username  string
-	FirstName *string `json:",omitempty"`
-	LastName  *string `json:",omitempty"`
-	Email     string
-	LastLogin *string `json:",omitempty"`
-	IsActive  bool
+	ID        uuid.UUID `json:"id"`
+	Username  string    `json:"username"`
+	FirstName *string   `json:"first_name,omitempty"`
+	LastName  *string   `json:"last_name,omitempty"`
+	Email     string    `json:"email"`
+	LastLogin *string   `json:"last_login,omitempty"`
+	IsActive  bool      `json:"is_active"`
 }
 
 type AppUserLoginResponse struct {
 	AppUserDto
-	AccessToken  string
-	RefreshToken string
+	AccessToken  string `json:"access_token"`
+	RefreshToken string `json:"refresh_token"`
 }
 
 func ConvertDbRow(user repository.AppUser) AppUserDto {

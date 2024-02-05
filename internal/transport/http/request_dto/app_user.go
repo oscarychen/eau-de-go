@@ -11,17 +11,17 @@ import (
 )
 
 type AppUserLoginRequestDto struct {
-	Username string
-	Password string
+	Username string `json:"username"`
+	Password string `json:"password"`
 }
 
 type CreateAppUserRequestDto struct {
-	Username  string
-	FirstName string
-	LastName  string
-	Email     string
-	Password  string
-	IsActive  bool
+	Username  string `json:"username"`
+	FirstName string `json:"first_name"`
+	LastName  string `json:"last_name"`
+	Email     string `json:"email"`
+	Password  string `json:"password"`
+	IsActive  bool   `json:"is_active"`
 }
 
 func MakeCreateAppUserParamsFromRequest(r *http.Request) (repository.CreateAppUserParams, error) {
@@ -45,8 +45,8 @@ func MakeCreateAppUserParamsFromRequest(r *http.Request) (repository.CreateAppUs
 }
 
 type UpdateAppUserRequestDto struct {
-	FirstName *string `json:",omitempty"`
-	LastName  *string `json:",omitempty"`
+	FirstName *string `json:"first_name,omitempty"`
+	LastName  *string `json:"last_name,omitempty"`
 }
 
 func MakeUpdateAppUserParamsFromRequest(r *http.Request) (repository.UpdateAppUserParams, error) {
