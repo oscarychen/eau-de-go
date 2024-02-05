@@ -3,7 +3,9 @@ package request_dto
 import (
 	"database/sql"
 	"eau-de-go/internal/repository"
+	"eau-de-go/pkg/jwt_util"
 	"encoding/json"
+	"github.com/google/uuid"
 	"io"
 	"net/http"
 )
@@ -15,28 +17,11 @@ type AppUserLoginRequestDto struct {
 
 type CreateAppUserRequestDto struct {
 	Username  string
-	FirstName sql.NullString
-	LastName  sql.NullString
+	FirstName string
+	LastName  string
 	Email     string
 	Password  string
 	IsActive  bool
-}
-
-func (c *CreateAppUserRequestDto) UnmarshalJSON(data []byte) error {
-	type Alias CreateAppUserRequestDto
-	aux := &struct {
-		FirstName string
-		LastName  string
-		*Alias
-	}{
-		Alias: (*Alias)(c),
-	}
-	if err := json.Unmarshal(data, &aux); err != nil {
-		return err
-	}
-	c.FirstName = sql.NullString{String: aux.FirstName, Valid: aux.FirstName != ""}
-	c.LastName = sql.NullString{String: aux.LastName, Valid: aux.LastName != ""}
-	return nil
 }
 
 func MakeCreateAppUserParamsFromRequest(r *http.Request) (repository.CreateAppUserParams, error) {
@@ -57,4 +42,51 @@ func MakeCreateAppUserParamsFromRequest(r *http.Request) (repository.CreateAppUs
 		LastName:  dto.LastName,
 	}
 	return createAppUserParams, nil
+}
+
+type UpdateAppUserRequestDto struct {
+	FirstName *string `json:",omitempty"`
+	LastName  *string `json:",omitempty"`
+}
+
+func MakeUpdateAppUserParamsFromRequest(r *http.Request) (repository.UpdateAppUserParams, error) {
+	var dto UpdateAppUserRequestDto
+	var firstName, lastName sql.NullString
+
+	jwtClaims := r.Context().Value("jwt_claims").(map[string]interface{})
+	idStr, ok := jwtClaims["id"].(string)
+	if !ok {
+		return repository.UpdateAppUserParams{}, &jwt_util.InvalidTokenError{}
+	}
+	userId, err := uuid.Parse(idStr)
+	if err != nil {
+		return repository.UpdateAppUserParams{}, &jwt_util.InvalidTokenError{}
+	}
+
+	bodyBytes, err := io.ReadAll(r.Body)
+	if err != nil {
+		return repository.UpdateAppUserParams{}, err
+	}
+	err = json.Unmarshal(bodyBytes, &dto)
+	if err != nil {
+		return repository.UpdateAppUserParams{}, err
+	}
+
+	if dto.FirstName == nil {
+		firstName = sql.NullString{Valid: false}
+	} else {
+		firstName = sql.NullString{String: *dto.FirstName, Valid: true}
+	}
+	if dto.LastName == nil {
+		lastName = sql.NullString{Valid: false}
+	} else {
+		lastName = sql.NullString{String: *dto.LastName, Valid: true}
+	}
+
+	updateAppUserParams := repository.UpdateAppUserParams{
+		ID:        userId,
+		FirstName: firstName,
+		LastName:  lastName,
+	}
+	return updateAppUserParams, nil
 }

@@ -14,6 +14,7 @@ import (
 type AppUserStore interface {
 	GetAppUserById(ctx context.Context, id uuid.UUID) (repository.AppUser, error)
 	CreateAppUser(ctx context.Context, appUser repository.CreateAppUserParams) (repository.AppUser, error)
+	UpdateAppUser(ctx context.Context, appUser repository.UpdateAppUserParams) (repository.AppUser, error)
 	GetAppUserByUsername(ctx context.Context, username string) (repository.AppUser, error)
 }
 
@@ -41,6 +42,15 @@ func (service *AppUserService) CreateAppUser(ctx context.Context, appUserParams 
 			log.Error(err)
 			return repository.AppUser{}, err
 		}
+	}
+	return dao, nil
+}
+
+func (service *AppUserService) UpdateAppUser(ctx context.Context, appUserParams repository.UpdateAppUserParams) (repository.AppUser, error) {
+	dao, err := service.AppUserStore.UpdateAppUser(ctx, appUserParams)
+	if err != nil {
+		log.Error(err)
+		return repository.AppUser{}, err
 	}
 	return dao, nil
 }

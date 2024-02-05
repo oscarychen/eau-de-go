@@ -19,7 +19,8 @@ import (
 type AppUserService interface {
 	Login(ctx context.Context, username string, password string) (repository.AppUser, error)
 	GetAppUserById(ctx context.Context, ID uuid.UUID) (repository.AppUser, error)
-	CreateAppUser(ctx context.Context, appUser repository.CreateAppUserParams) (repository.AppUser, error)
+	CreateAppUser(ctx context.Context, appUserParams repository.CreateAppUserParams) (repository.AppUser, error)
+	UpdateAppUser(ctx context.Context, appUserParams repository.UpdateAppUserParams) (repository.AppUser, error)
 	GetAppUserTokens(appUser repository.AppUser) (string, map[string]interface{}, string, map[string]interface{}, error)
 	RefreshToken(ctx context.Context, refreshToken string) (string, map[string]interface{}, repository.AppUser, error)
 }
@@ -148,13 +149,13 @@ func (h *Handler) GetAppUserById(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) CreateAppUser(w http.ResponseWriter, r *http.Request) {
 
-	createAppUserParams, err := request_dto.MakeCreateAppUserParamsFromRequest(r)
+	appUserParams, err := request_dto.MakeCreateAppUserParamsFromRequest(r)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	userDao, err := h.AppUserService.CreateAppUser(r.Context(), createAppUserParams)
+	userDao, err := h.AppUserService.CreateAppUser(r.Context(), appUserParams)
 	if err != nil { // TODO: Refactor this error handling
 		var duplicateKeyError *repository.DuplicateKeyError
 
@@ -165,6 +166,38 @@ func (h *Handler) CreateAppUser(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
+	}
+
+	userDto := response_dto.ConvertDbRow(userDao)
+
+	jsonData, err := json.Marshal(userDto)
+	if err != nil {
+		log.Errorf("Error marshalling json: %v", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	_, err = w.Write(jsonData)
+	if err != nil {
+		log.Errorf("Error writing response: %v", err)
+		return
+	}
+}
+
+func (h *Handler) UpdateAppUser(w http.ResponseWriter, r *http.Request) {
+
+	appUserParams, err := request_dto.MakeUpdateAppUserParamsFromRequest(r)
+	if err != nil {
+		log.Errorf("Error unmarshalling json: %v", err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	userDao, err := h.AppUserService.UpdateAppUser(r.Context(), appUserParams)
+	if err != nil {
+		log.Errorf("Error updating user: %v", err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
 
 	userDto := response_dto.ConvertDbRow(userDao)
