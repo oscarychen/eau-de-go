@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"eau-de-go/internal/repository"
+	"eau-de-go/pkg/email_util"
 	"eau-de-go/pkg/jwt_util"
 	"eau-de-go/pkg/password_util"
 	"errors"
@@ -34,6 +35,13 @@ func (service *AppUserService) CreateAppUser(ctx context.Context, appUserParams 
 		return repository.AppUser{}, err
 	}
 	appUserParams.Password = string(hashedPassword)
+
+	validatedEmail, err := email_util.ValidateEmail(appUserParams.Email)
+	if err != nil {
+		return repository.AppUser{}, err
+	}
+	appUserParams.Email = validatedEmail
+
 	dao, err := service.AppUserStore.CreateAppUser(ctx, appUserParams)
 	if err != nil { // TODO: Refactor this error handling
 		var dbErr *pq.Error
