@@ -8,10 +8,10 @@ import (
 type AppUserDto struct {
 	ID        uuid.UUID
 	Username  string
-	FirstName *string
-	LastName  *string
+	FirstName *string `json:",omitempty"`
+	LastName  *string `json:",omitempty"`
 	Email     string
-	LastLogin *string
+	LastLogin *string `json:",omitempty"`
 	IsActive  bool
 }
 
@@ -22,13 +22,7 @@ type AppUserLoginResponse struct {
 }
 
 func ConvertDbRow(user repository.AppUser) AppUserDto {
-	var firstName, lastName, lastLogin *string
-	if user.FirstName.Valid {
-		firstName = &user.FirstName.String
-	}
-	if user.LastName.Valid {
-		lastName = &user.LastName.String
-	}
+	var lastLogin *string
 
 	if user.LastLogin.Valid {
 		lastLoginStr := user.LastLogin.Time.String()
@@ -38,8 +32,8 @@ func ConvertDbRow(user repository.AppUser) AppUserDto {
 	return AppUserDto{
 		ID:        user.ID,
 		Username:  user.Username,
-		FirstName: firstName,
-		LastName:  lastName,
+		FirstName: &user.FirstName,
+		LastName:  &user.LastName,
 		Email:     user.Email,
 		LastLogin: lastLogin,
 		IsActive:  user.IsActive,

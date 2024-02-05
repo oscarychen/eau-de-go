@@ -7,8 +7,8 @@ CREATE TABLE "app_user" (
                             "email" varchar(254) COLLATE "case_insensitive" NOT NULL UNIQUE,
                             "password" varchar(128) NOT NULL,
                             "last_login" timestamp with time zone NULL,
-                            "first_name" varchar(150) NULL,
-                            "last_name" varchar(150) NULL,
+                            "first_name" varchar(150) NOT NULL,
+                            "last_name" varchar(150) NOT NULL,
                             "is_staff" boolean NOT NULL default false,
                             "is_active" boolean NOT NULL default true,
                             "date_joined" timestamp with time zone NOT NULL default CURRENT_TIMESTAMP

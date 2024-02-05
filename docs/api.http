@@ -4,13 +4,12 @@ Accept: application/json
 Authorization: Bearer {{access_token}}
 
 
-### Create a user
+### User sign up / Create a user
 POST {{server_url}}/auth/sign-up/
 Content-Type: application/json
 
 {
   "UserName": "{{username}}",
-  "FirstName": "any",
   "LastName": "body",
   "Email": "random@email.com",
   "Password": "{{password}}"
@@ -44,3 +43,11 @@ POST {{server_url}}/auth/token-refresh/
     client.global.set("user_id", response.body.ID);
 %}
 
+### User self update
+PATCH {{server_url}}/api/user/me/
+Authorization: Bearer {{access_token}}
+
+{
+  "FirstName": "new name",
+  "LastName": "new last name"
+}

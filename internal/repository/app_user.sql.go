@@ -29,8 +29,8 @@ type CreateAppUserParams struct {
 	Username  string
 	Email     string
 	Password  string
-	FirstName sql.NullString
-	LastName  sql.NullString
+	FirstName string
+	LastName  string
 }
 
 func (q *Queries) CreateAppUser(ctx context.Context, arg CreateAppUserParams) (AppUser, error) {
@@ -166,30 +166,20 @@ func (q *Queries) ListAppUser(ctx context.Context) ([]AppUser, error) {
 
 const updateAppUser = `-- name: UpdateAppUser :one
 UPDATE app_user
-SET email = $2,
-    first_name = $3,
-    last_name = $4,
-    is_active = $5
-WHERE id = $1
+SET first_name = coalesce($1, first_name),
+    last_name = coalesce($2, last_name)
+WHERE id = $3
     RETURNING id, username, email, password, last_login, first_name, last_name, is_staff, is_active, date_joined
 `
 
 type UpdateAppUserParams struct {
-	ID        uuid.UUID
-	Email     string
 	FirstName sql.NullString
 	LastName  sql.NullString
-	IsActive  bool
+	ID        uuid.UUID
 }
 
 func (q *Queries) UpdateAppUser(ctx context.Context, arg UpdateAppUserParams) (AppUser, error) {
-	row := q.db.QueryRowContext(ctx, updateAppUser,
-		arg.ID,
-		arg.Email,
-		arg.FirstName,
-		arg.LastName,
-		arg.IsActive,
-	)
+	row := q.db.QueryRowContext(ctx, updateAppUser, arg.FirstName, arg.LastName, arg.ID)
 	var i AppUser
 	err := row.Scan(
 		&i.ID,

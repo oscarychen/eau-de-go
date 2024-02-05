@@ -27,11 +27,9 @@ INSERT INTO app_user (
 
 -- name: UpdateAppUser :one
 UPDATE app_user
-SET email = $2,
-    first_name = $3,
-    last_name = $4,
-    is_active = $5
-WHERE id = $1
+SET first_name = coalesce(sqlc.narg('first_name'), first_name),
+    last_name = coalesce(sqlc.narg('last_name'), last_name)
+WHERE id = sqlc.arg('id')
     RETURNING *;
 
 -- name: UpdateAppUserPassword :one
