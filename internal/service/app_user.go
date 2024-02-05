@@ -30,6 +30,9 @@ func NewAppUserService(appUserStore AppUserStore) *AppUserService {
 
 func (service *AppUserService) CreateAppUser(ctx context.Context, appUserParams repository.CreateAppUserParams) (repository.AppUser, error) {
 	hashedPassword, err := password_util.HashPassword(appUserParams.Password)
+	if err != nil {
+		return repository.AppUser{}, err
+	}
 	appUserParams.Password = string(hashedPassword)
 	dao, err := service.AppUserStore.CreateAppUser(ctx, appUserParams)
 	if err != nil { // TODO: Refactor this error handling
@@ -76,7 +79,7 @@ func (service *AppUserService) GetAppUserByUsername(ctx context.Context, usernam
 func (service *AppUserService) Login(ctx context.Context, username string, password string) (repository.AppUser, error) {
 	dao, err := service.AppUserStore.GetAppUserByUsername(ctx, username)
 	if err != nil {
-		return repository.AppUser{}, err
+		return repository.AppUser{}, &repository.IncorrectUserCredentialError{}
 	}
 	if err := password_util.CheckPassword(password, []byte(dao.Password)); err != nil {
 		return repository.AppUser{}, &repository.IncorrectUserCredentialError{}

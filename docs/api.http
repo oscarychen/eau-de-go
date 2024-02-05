@@ -9,9 +9,9 @@ POST {{server_url}}/auth/sign-up/
 Content-Type: application/json
 
 {
-  "userName": "{{username}}",
-  "lastName": "body",
-  "email": "",
+  "username": "{{username}}",
+  "last_name": "buddy",
+  "email": "{{email}}",
   "password": "{{password}}"
 }
 
@@ -25,7 +25,7 @@ POST {{server_url}}/auth/login/
 Content-Type: application/json
 
 {
-  "userName": "{{username}}",
+  "username": "{{username}}",
   "password": "{{password}}"
 }
 
@@ -48,6 +48,6 @@ PATCH {{server_url}}/api/user/me/
 Authorization: Bearer {{access_token}}
 
 {
-  "first_name": "new firstname
+  "first_name": "new firstname",
   "last_name": "new lastname"
 }
