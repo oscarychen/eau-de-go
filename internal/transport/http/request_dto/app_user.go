@@ -97,3 +97,8 @@ func MakeUpdateAppUserParamsFromRequest(r *http.Request) (repository.UpdateAppUs
 	}
 	return updateAppUserParams, nil
 }
+
+type UpdateAppUserPasswordRequestDto struct {
+	OldPassword string `json:"old_password"`
+	NewPassword string `json:"new_password"`
+}

@@ -34,8 +34,8 @@ WHERE id = sqlc.arg('id')
 
 -- name: UpdateAppUserPassword :one
 UPDATE app_user
-SET password = $2
-WHERE id = $1
+SET password = sqlc.arg('password')
+WHERE id = sqlc.arg('id')
     RETURNING *;
 
 -- name: UpdateAppUserLastLogin :one

@@ -51,3 +51,12 @@ Authorization: Bearer {{access_token}}
   "first_name": "new firstname",
   "last_name": "new lastname"
 }
+
+### User change password
+POST {{server_url}}/api/user/me/password/
+Authorization: Bearer {{access_token}}
+
+{
+  "old_password": "{{password}}",
+  "new_password": "{{password}}"
+}
