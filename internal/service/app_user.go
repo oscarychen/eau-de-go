@@ -16,6 +16,7 @@ type AppUserStore interface {
 	GetAppUserById(ctx context.Context, id uuid.UUID) (repository.AppUser, error)
 	CreateAppUser(ctx context.Context, appUser repository.CreateAppUserParams) (repository.AppUser, error)
 	UpdateAppUser(ctx context.Context, appUser repository.UpdateAppUserParams) (repository.AppUser, error)
+	UpdateAppUserPassword(ctx context.Context, appUser repository.UpdateAppUserPasswordParams) (repository.AppUser, error)
 	GetAppUserByUsername(ctx context.Context, username string) (repository.AppUser, error)
 }
 
@@ -29,8 +30,10 @@ func NewAppUserService(appUserStore AppUserStore) *AppUserService {
 	}
 }
 
+var HashPasswordFunc = password_util.HashPassword
+
 func (service *AppUserService) CreateAppUser(ctx context.Context, appUserParams repository.CreateAppUserParams) (repository.AppUser, error) {
-	hashedPassword, err := password_util.HashPassword(appUserParams.Password)
+	hashedPassword, err := HashPasswordFunc(appUserParams.Password)
 	if err != nil {
 		return repository.AppUser{}, err
 	}
@@ -59,6 +62,38 @@ func (service *AppUserService) CreateAppUser(ctx context.Context, appUserParams 
 
 func (service *AppUserService) UpdateAppUser(ctx context.Context, appUserParams repository.UpdateAppUserParams) (repository.AppUser, error) {
 	dao, err := service.AppUserStore.UpdateAppUser(ctx, appUserParams)
+	if err != nil {
+		log.Error(err)
+		return repository.AppUser{}, err
+	}
+	return dao, nil
+}
+
+func (service *AppUserService) UpdateAppUserPassword(ctx context.Context, userId uuid.UUID, oldPassword string, newPassword string) (repository.AppUser, error) {
+
+	if oldPassword == newPassword {
+		return repository.AppUser{}, &password_util.SamePasswordError{}
+	}
+
+	dao, err := service.AppUserStore.GetAppUserById(ctx, userId)
+	if err != nil {
+		log.Error(err)
+		return repository.AppUser{}, err
+	}
+
+	err = password_util.CheckPassword(oldPassword, []byte(dao.Password))
+	if err != nil {
+		return repository.AppUser{}, &repository.IncorrectUserCredentialError{}
+	}
+	hashedNewPassword, err := HashPasswordFunc(newPassword)
+	if err != nil {
+		return repository.AppUser{}, err
+	}
+	appUserParams := repository.UpdateAppUserPasswordParams{
+		ID:       userId,
+		Password: string(hashedNewPassword),
+	}
+	dao, err = service.AppUserStore.UpdateAppUserPassword(ctx, appUserParams)
 	if err != nil {
 		log.Error(err)
 		return repository.AppUser{}, err
@@ -130,13 +165,18 @@ func (service *AppUserService) RefreshToken(ctx context.Context, refreshToken st
 	refreshTokenClaims, err := jwt_util.DecodeToken(jwt_util.Refresh, refreshToken)
 	if err != nil {
 		log.Error(err)
-		return "", nil, repository.AppUser{}, err
+		return "", nil, repository.AppUser{}, &jwt_util.InvalidTokenError{}
 	}
 
-	userId, err := uuid.Parse(refreshTokenClaims["id"].(string))
+	idStr, ok := refreshTokenClaims["id"].(string)
+	if !ok {
+		return "", nil, repository.AppUser{}, &jwt_util.InvalidTokenError{}
+	}
+
+	userId, err := uuid.Parse(idStr)
 	if err != nil {
 		log.Error(err)
-		return "", nil, repository.AppUser{}, err
+		return "", nil, repository.AppUser{}, &jwt_util.InvalidTokenError{}
 	}
 
 	appUser, err := service.GetAppUserById(ctx, userId)

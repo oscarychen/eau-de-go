@@ -228,18 +228,18 @@ func (q *Queries) UpdateAppUserLastLogin(ctx context.Context, arg UpdateAppUserL
 
 const updateAppUserPassword = `-- name: UpdateAppUserPassword :one
 UPDATE app_user
-SET password = $2
-WHERE id = $1
+SET password = $1
+WHERE id = $2
     RETURNING id, username, email, password, last_login, first_name, last_name, is_staff, is_active, date_joined
 `
 
 type UpdateAppUserPasswordParams struct {
-	ID       uuid.UUID `json:"id"`
 	Password string    `json:"password"`
+	ID       uuid.UUID `json:"id"`
 }
 
 func (q *Queries) UpdateAppUserPassword(ctx context.Context, arg UpdateAppUserPasswordParams) (AppUser, error) {
-	row := q.db.QueryRowContext(ctx, updateAppUserPassword, arg.ID, arg.Password)
+	row := q.db.QueryRowContext(ctx, updateAppUserPassword, arg.Password, arg.ID)
 	var i AppUser
 	err := row.Scan(
 		&i.ID,

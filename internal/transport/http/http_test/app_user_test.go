@@ -24,6 +24,11 @@ type MockAppUserService struct {
 	mock.Mock
 }
 
+func (m *MockAppUserService) UpdateAppUserPassword(ctx context.Context, userId uuid.UUID, oldPassword string, newPassword string) (repository.AppUser, error) {
+	args := m.Called(ctx, userId, oldPassword, newPassword)
+	return args.Get(0).(repository.AppUser), args.Error(1)
+}
+
 func (m *MockAppUserService) Login(ctx context.Context, username string, password string) (repository.AppUser, error) {
 	args := m.Called(ctx, username, password)
 	return args.Get(0).(repository.AppUser), args.Error(1)

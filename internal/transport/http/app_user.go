@@ -21,6 +21,7 @@ type AppUserService interface {
 	GetAppUserById(ctx context.Context, ID uuid.UUID) (repository.AppUser, error)
 	CreateAppUser(ctx context.Context, appUserParams repository.CreateAppUserParams) (repository.AppUser, error)
 	UpdateAppUser(ctx context.Context, appUserParams repository.UpdateAppUserParams) (repository.AppUser, error)
+	UpdateAppUserPassword(ctx context.Context, userId uuid.UUID, oldPassword string, newPassword string) (repository.AppUser, error)
 	GetAppUserTokens(appUser repository.AppUser) (string, map[string]interface{}, string, map[string]interface{}, error)
 	RefreshToken(ctx context.Context, refreshToken string) (string, map[string]interface{}, repository.AppUser, error)
 }
@@ -196,6 +197,54 @@ func (h *Handler) UpdateAppUser(w http.ResponseWriter, r *http.Request) {
 	userDao, err := h.AppUserService.UpdateAppUser(r.Context(), appUserParams)
 	if err != nil {
 		log.Errorf("Error updating user: %v", err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	userDto := response_dto.ConvertDbRow(userDao)
+
+	jsonData, err := json.Marshal(userDto)
+	if err != nil {
+		log.Errorf("Error marshalling json: %v", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	_, err = w.Write(jsonData)
+	if err != nil {
+		log.Errorf("Error writing response: %v", err)
+		return
+	}
+}
+
+func (h *Handler) UpdateAppUserPassword(w http.ResponseWriter, r *http.Request) {
+
+	jwtClaims, ok := r.Context().Value("jwt_claims").(map[string]interface{})
+	if !ok {
+		http.Error(w, "Error parsing access token", http.StatusUnauthorized)
+		return
+	}
+
+	idStr, ok := jwtClaims["id"].(string)
+	if !ok {
+		http.Error(w, "Error parsing access token", http.StatusUnauthorized)
+	}
+
+	userId, err := uuid.Parse(idStr)
+	if err != nil {
+		http.Error(w, "Invalid access token", http.StatusUnauthorized)
+		return
+	}
+
+	var updatePasswordDto request_dto.UpdateAppUserPasswordRequestDto
+	err = json.NewDecoder(r.Body).Decode(&updatePasswordDto)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	userDao, err := h.AppUserService.UpdateAppUserPassword(r.Context(), userId, updatePasswordDto.OldPassword, updatePasswordDto.NewPassword)
+	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
