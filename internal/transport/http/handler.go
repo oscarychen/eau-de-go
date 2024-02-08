@@ -44,7 +44,7 @@ func (h *Handler) mapRoutes() {
 	h.Router.HandleFunc("/auth/token-refresh/", h.TokenRefresh).Methods("POST")
 	h.Router.HandleFunc("/auth/sign-up/", h.CreateAppUser).Methods("POST")
 
-	h.ProtectedRouter.HandleFunc("/user/{id}/", h.GetAppUserById).Methods("GET")
+	h.ProtectedRouter.HandleFunc("/user/{id}/", h.GetAppUserById).Methods("GET") // TODO: remove
 	h.ProtectedRouter.HandleFunc("/user/me/password/", h.UpdateAppUserPassword).Methods("POST")
 	h.ProtectedRouter.HandleFunc("/user/me/", h.UpdateAppUser).Methods("PATCH")
 }
