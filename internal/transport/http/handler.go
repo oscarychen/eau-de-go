@@ -2,8 +2,8 @@ package http
 
 import (
 	"context"
-	"eau-de-go/internal/settings"
 	"eau-de-go/internal/transport/middleware"
+	"eau-de-go/settings"
 	"fmt"
 	"github.com/gorilla/mux"
 	"log"

@@ -1,8 +1,8 @@
 package jwt_test
 
 import (
-	"eau-de-go/internal/settings"
 	"eau-de-go/pkg/jwt_util"
+	"eau-de-go/settings"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"

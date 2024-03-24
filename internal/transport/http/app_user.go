@@ -3,9 +3,9 @@ package http
 import (
 	"context"
 	"eau-de-go/internal/repository"
-	"eau-de-go/internal/settings"
 	"eau-de-go/internal/transport/http/request_dto"
 	"eau-de-go/internal/transport/http/response_dto"
+	"eau-de-go/settings"
 	"encoding/json"
 	"errors"
 	"github.com/google/uuid"

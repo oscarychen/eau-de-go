@@ -2,7 +2,7 @@ package db
 
 import (
 	"context"
-	"eau-de-go/internal/settings"
+	"eau-de-go/settings"
 	"fmt"
 
 	"github.com/jmoiron/sqlx"
