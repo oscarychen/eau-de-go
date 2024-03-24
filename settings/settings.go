@@ -19,6 +19,10 @@ var (
 	AccessTokenLife     time.Duration
 	RefreshCookieSecure bool
 	ServerPort          string
+	EmailHost           string
+	EmailPort           string
+	EmailHostUser       string
+	EmailHostPassword   string
 )
 
 func init() {
@@ -35,6 +39,11 @@ func init() {
 	DbName = getEnv("DB_NAME", "eau-de-go")
 	DbPassword = getEnv("DB_PASSWORD", "")
 	ServerPort = getEnv("SERVER_PORT", "8080")
+
+	EmailHost = getEnv("EMAIL_HOST", "")
+	EmailPort = getEnv("EMAIL_PORT", "587")
+	EmailHostUser = getEnv("EMAIL_HOST_USER", "")
+	EmailHostPassword = getEnv("EMAIL_HOST_PASSWORD", "")
 
 	if refreshTokenLifeMinutes, err := strconv.Atoi(getEnv("REFRESH_TOKEN_LIFE_MINUTES", "10080")); err == nil {
 		RefreshTokenLife = time.Minute * time.Duration(refreshTokenLifeMinutes)

@@ -1,7 +1,7 @@
 package jwt_util
 
 import (
-	"eau-de-go/internal/settings"
+	"eau-de-go/settings"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"time"
