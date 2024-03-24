@@ -39,7 +39,7 @@ func (service *AppUserService) CreateAppUser(ctx context.Context, appUserParams 
 	}
 	appUserParams.Password = string(hashedPassword)
 
-	validatedEmail, err := email_util.ValidateEmail(appUserParams.Email)
+	validatedEmail, err := email_util.ValidateEmailAddress(appUserParams.Email)
 	if err != nil {
 		return repository.AppUser{}, err
 	}
