@@ -12,14 +12,15 @@ import (
 )
 
 type AppUser struct {
-	ID         uuid.UUID    `json:"id"`
-	Username   string       `json:"username"`
-	Email      string       `json:"email"`
-	Password   string       `json:"password"`
-	LastLogin  sql.NullTime `json:"last_login"`
-	FirstName  string       `json:"first_name"`
-	LastName   string       `json:"last_name"`
-	IsStaff    bool         `json:"is_staff"`
-	IsActive   bool         `json:"is_active"`
-	DateJoined time.Time    `json:"date_joined"`
+	ID            uuid.UUID    `json:"id"`
+	Username      string       `json:"username"`
+	Email         string       `json:"email"`
+	EmailVerified bool         `json:"email_verified"`
+	Password      string       `json:"password"`
+	LastLogin     sql.NullTime `json:"last_login"`
+	FirstName     string       `json:"first_name"`
+	LastName      string       `json:"last_name"`
+	IsStaff       bool         `json:"is_staff"`
+	IsActive      bool         `json:"is_active"`
+	DateJoined    time.Time    `json:"date_joined"`
 }

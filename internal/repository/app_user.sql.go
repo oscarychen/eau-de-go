@@ -12,6 +12,32 @@ import (
 	"github.com/google/uuid"
 )
 
+const activateUser = `-- name: ActivateUser :one
+UPDATE app_user
+SET is_active = true
+WHERE id = $1
+    RETURNING id, username, email, email_verified, password, last_login, first_name, last_name, is_staff, is_active, date_joined
+`
+
+func (q *Queries) ActivateUser(ctx context.Context, id uuid.UUID) (AppUser, error) {
+	row := q.db.QueryRowContext(ctx, activateUser, id)
+	var i AppUser
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.Email,
+		&i.EmailVerified,
+		&i.Password,
+		&i.LastLogin,
+		&i.FirstName,
+		&i.LastName,
+		&i.IsStaff,
+		&i.IsActive,
+		&i.DateJoined,
+	)
+	return i, err
+}
+
 const createAppUser = `-- name: CreateAppUser :one
 INSERT INTO app_user (
     username,
@@ -22,7 +48,7 @@ INSERT INTO app_user (
 ) VALUES (
              $1, $2, $3, $4, $5
          )
-    RETURNING id, username, email, password, last_login, first_name, last_name, is_staff, is_active, date_joined
+    RETURNING id, username, email, email_verified, password, last_login, first_name, last_name, is_staff, is_active, date_joined
 `
 
 type CreateAppUserParams struct {
@@ -46,6 +72,33 @@ func (q *Queries) CreateAppUser(ctx context.Context, arg CreateAppUserParams) (A
 		&i.ID,
 		&i.Username,
 		&i.Email,
+		&i.EmailVerified,
+		&i.Password,
+		&i.LastLogin,
+		&i.FirstName,
+		&i.LastName,
+		&i.IsStaff,
+		&i.IsActive,
+		&i.DateJoined,
+	)
+	return i, err
+}
+
+const deactivateUser = `-- name: DeactivateUser :one
+UPDATE app_user
+SET is_active = false
+WHERE id = $1
+    RETURNING id, username, email, email_verified, password, last_login, first_name, last_name, is_staff, is_active, date_joined
+`
+
+func (q *Queries) DeactivateUser(ctx context.Context, id uuid.UUID) (AppUser, error) {
+	row := q.db.QueryRowContext(ctx, deactivateUser, id)
+	var i AppUser
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.Email,
+		&i.EmailVerified,
 		&i.Password,
 		&i.LastLogin,
 		&i.FirstName,
@@ -58,7 +111,7 @@ func (q *Queries) CreateAppUser(ctx context.Context, arg CreateAppUserParams) (A
 }
 
 const getAppUserByEmailAddr = `-- name: GetAppUserByEmailAddr :one
-SELECT id, username, email, password, last_login, first_name, last_name, is_staff, is_active, date_joined FROM app_user
+SELECT id, username, email, email_verified, password, last_login, first_name, last_name, is_staff, is_active, date_joined FROM app_user
 WHERE email = $1 LIMIT 1
 `
 
@@ -69,6 +122,7 @@ func (q *Queries) GetAppUserByEmailAddr(ctx context.Context, email string) (AppU
 		&i.ID,
 		&i.Username,
 		&i.Email,
+		&i.EmailVerified,
 		&i.Password,
 		&i.LastLogin,
 		&i.FirstName,
@@ -81,7 +135,7 @@ func (q *Queries) GetAppUserByEmailAddr(ctx context.Context, email string) (AppU
 }
 
 const getAppUserById = `-- name: GetAppUserById :one
-SELECT id, username, email, password, last_login, first_name, last_name, is_staff, is_active, date_joined FROM app_user
+SELECT id, username, email, email_verified, password, last_login, first_name, last_name, is_staff, is_active, date_joined FROM app_user
 WHERE id = $1 LIMIT 1
 `
 
@@ -92,6 +146,7 @@ func (q *Queries) GetAppUserById(ctx context.Context, id uuid.UUID) (AppUser, er
 		&i.ID,
 		&i.Username,
 		&i.Email,
+		&i.EmailVerified,
 		&i.Password,
 		&i.LastLogin,
 		&i.FirstName,
@@ -104,7 +159,7 @@ func (q *Queries) GetAppUserById(ctx context.Context, id uuid.UUID) (AppUser, er
 }
 
 const getAppUserByUsername = `-- name: GetAppUserByUsername :one
-SELECT id, username, email, password, last_login, first_name, last_name, is_staff, is_active, date_joined FROM app_user
+SELECT id, username, email, email_verified, password, last_login, first_name, last_name, is_staff, is_active, date_joined FROM app_user
 WHERE username = $1 LIMIT 1
 `
 
@@ -115,6 +170,7 @@ func (q *Queries) GetAppUserByUsername(ctx context.Context, username string) (Ap
 		&i.ID,
 		&i.Username,
 		&i.Email,
+		&i.EmailVerified,
 		&i.Password,
 		&i.LastLogin,
 		&i.FirstName,
@@ -127,7 +183,7 @@ func (q *Queries) GetAppUserByUsername(ctx context.Context, username string) (Ap
 }
 
 const listAppUser = `-- name: ListAppUser :many
-SELECT id, username, email, password, last_login, first_name, last_name, is_staff, is_active, date_joined FROM app_user
+SELECT id, username, email, email_verified, password, last_login, first_name, last_name, is_staff, is_active, date_joined FROM app_user
 `
 
 func (q *Queries) ListAppUser(ctx context.Context) ([]AppUser, error) {
@@ -143,6 +199,7 @@ func (q *Queries) ListAppUser(ctx context.Context) ([]AppUser, error) {
 			&i.ID,
 			&i.Username,
 			&i.Email,
+			&i.EmailVerified,
 			&i.Password,
 			&i.LastLogin,
 			&i.FirstName,
@@ -164,12 +221,64 @@ func (q *Queries) ListAppUser(ctx context.Context) ([]AppUser, error) {
 	return items, nil
 }
 
+const setUserEmailUnverified = `-- name: SetUserEmailUnverified :one
+UPDATE app_user
+SET email_verified = false
+WHERE id = $1
+    RETURNING id, username, email, email_verified, password, last_login, first_name, last_name, is_staff, is_active, date_joined
+`
+
+func (q *Queries) SetUserEmailUnverified(ctx context.Context, id uuid.UUID) (AppUser, error) {
+	row := q.db.QueryRowContext(ctx, setUserEmailUnverified, id)
+	var i AppUser
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.Email,
+		&i.EmailVerified,
+		&i.Password,
+		&i.LastLogin,
+		&i.FirstName,
+		&i.LastName,
+		&i.IsStaff,
+		&i.IsActive,
+		&i.DateJoined,
+	)
+	return i, err
+}
+
+const setUserEmailVerified = `-- name: SetUserEmailVerified :one
+UPDATE app_user
+SET email_verified = true
+WHERE id = $1
+    RETURNING id, username, email, email_verified, password, last_login, first_name, last_name, is_staff, is_active, date_joined
+`
+
+func (q *Queries) SetUserEmailVerified(ctx context.Context, id uuid.UUID) (AppUser, error) {
+	row := q.db.QueryRowContext(ctx, setUserEmailVerified, id)
+	var i AppUser
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.Email,
+		&i.EmailVerified,
+		&i.Password,
+		&i.LastLogin,
+		&i.FirstName,
+		&i.LastName,
+		&i.IsStaff,
+		&i.IsActive,
+		&i.DateJoined,
+	)
+	return i, err
+}
+
 const updateAppUser = `-- name: UpdateAppUser :one
 UPDATE app_user
 SET first_name = coalesce($1, first_name),
     last_name = coalesce($2, last_name)
 WHERE id = $3
-    RETURNING id, username, email, password, last_login, first_name, last_name, is_staff, is_active, date_joined
+    RETURNING id, username, email, email_verified, password, last_login, first_name, last_name, is_staff, is_active, date_joined
 `
 
 type UpdateAppUserParams struct {
@@ -185,6 +294,7 @@ func (q *Queries) UpdateAppUser(ctx context.Context, arg UpdateAppUserParams) (A
 		&i.ID,
 		&i.Username,
 		&i.Email,
+		&i.EmailVerified,
 		&i.Password,
 		&i.LastLogin,
 		&i.FirstName,
@@ -200,7 +310,7 @@ const updateAppUserLastLogin = `-- name: UpdateAppUserLastLogin :one
 UPDATE app_user
 SET last_login = $2
 WHERE id = $1
-    RETURNING id, username, email, password, last_login, first_name, last_name, is_staff, is_active, date_joined
+    RETURNING id, username, email, email_verified, password, last_login, first_name, last_name, is_staff, is_active, date_joined
 `
 
 type UpdateAppUserLastLoginParams struct {
@@ -215,6 +325,7 @@ func (q *Queries) UpdateAppUserLastLogin(ctx context.Context, arg UpdateAppUserL
 		&i.ID,
 		&i.Username,
 		&i.Email,
+		&i.EmailVerified,
 		&i.Password,
 		&i.LastLogin,
 		&i.FirstName,
@@ -230,7 +341,7 @@ const updateAppUserPassword = `-- name: UpdateAppUserPassword :one
 UPDATE app_user
 SET password = $1
 WHERE id = $2
-    RETURNING id, username, email, password, last_login, first_name, last_name, is_staff, is_active, date_joined
+    RETURNING id, username, email, email_verified, password, last_login, first_name, last_name, is_staff, is_active, date_joined
 `
 
 type UpdateAppUserPasswordParams struct {
@@ -245,6 +356,7 @@ func (q *Queries) UpdateAppUserPassword(ctx context.Context, arg UpdateAppUserPa
 		&i.ID,
 		&i.Username,
 		&i.Email,
+		&i.EmailVerified,
 		&i.Password,
 		&i.LastLogin,
 		&i.FirstName,
