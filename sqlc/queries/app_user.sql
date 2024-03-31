@@ -43,3 +43,27 @@ UPDATE app_user
 SET last_login = $2
 WHERE id = $1
     RETURNING *;
+
+-- name: ActivateUser :one
+UPDATE app_user
+SET is_active = true
+WHERE id = $1
+    RETURNING *;
+
+-- name: DeactivateUser :one
+UPDATE app_user
+SET is_active = false
+WHERE id = $1
+    RETURNING *;
+
+-- name: SetUserEmailVerified :one
+UPDATE app_user
+SET email_verified = true
+WHERE id = $1
+    RETURNING *;
+
+-- name: SetUserEmailUnverified :one
+UPDATE app_user
+SET email_verified = false
+WHERE id = $1
+    RETURNING *;

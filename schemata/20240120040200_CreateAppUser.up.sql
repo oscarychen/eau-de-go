@@ -5,6 +5,7 @@ CREATE TABLE "app_user" (
                             "id" uuid NOT NULL DEFAULT uuid_generate_v4() PRIMARY KEY,
                             "username" varchar(150) COLLATE "case_insensitive" NOT NULL UNIQUE,
                             "email" varchar(254) COLLATE "case_insensitive" NOT NULL UNIQUE,
+                            "email_verified" bool NOT NULL DEFAULT false,
                             "password" varchar(128) NOT NULL,
                             "last_login" timestamp with time zone NULL,
                             "first_name" varchar(150) NOT NULL,
