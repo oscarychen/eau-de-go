@@ -1,6 +1,7 @@
 package jwt_util
 
 import (
+	"eau-de-go/pkg/keys"
 	"eau-de-go/settings"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
@@ -28,7 +29,7 @@ func createToken(claims map[string]interface{}) (string, map[string]interface{},
 	injectStandardClaims(claims)
 	token := jwt.NewWithClaims(jwt.SigningMethodPS256, jwt.MapClaims(claims))
 
-	signingKey, err := GetInMemoryRsaKeyPair().GetSigningKey()
+	signingKey, err := keys.GetInMemoryRsaKeyPair().GetSigningKey()
 	tokenString, err := token.SignedString(signingKey)
 	if err != nil {
 		return "", nil, err
@@ -39,7 +40,7 @@ func createToken(claims map[string]interface{}) (string, map[string]interface{},
 
 func DecodeToken(tokenType TokenType, tokenString string) (map[string]interface{}, error) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		return GetInMemoryRsaKeyPair().GetVerificationKey()
+		return keys.GetInMemoryRsaKeyPair().GetVerificationKey()
 	})
 
 	if err != nil {
