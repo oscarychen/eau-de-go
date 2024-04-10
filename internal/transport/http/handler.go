@@ -47,6 +47,8 @@ func (h *Handler) mapRoutes() {
 	h.ProtectedRouter.HandleFunc("/user/{id}/", h.GetAppUserById).Methods("GET") // TODO: remove
 	h.ProtectedRouter.HandleFunc("/user/me/password/", h.UpdateAppUserPassword).Methods("POST")
 	h.ProtectedRouter.HandleFunc("/user/me/", h.UpdateAppUser).Methods("PATCH")
+
+	h.ProtectedRouter.HandleFunc("/user/send-email-verification/", h.SendUserEmailVerification).Methods("POST")
 }
 
 func (h *Handler) Serve() error {

@@ -10,6 +10,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/lib/pq"
 	log "github.com/sirupsen/logrus"
+	"net/url"
 )
 
 type AppUserStore interface {
@@ -18,6 +19,9 @@ type AppUserStore interface {
 	UpdateAppUser(ctx context.Context, appUser repository.UpdateAppUserParams) (repository.AppUser, error)
 	UpdateAppUserPassword(ctx context.Context, appUser repository.UpdateAppUserPasswordParams) (repository.AppUser, error)
 	GetAppUserByUsername(ctx context.Context, username string) (repository.AppUser, error)
+	SetUserEmailVerified(ctx context.Context, userId uuid.UUID) (repository.AppUser, error)
+	SetUserEmailUnverified(ctx context.Context, userId uuid.UUID) (repository.AppUser, error)
+	UpdateAppUserLastLogin(ctx context.Context, data repository.UpdateAppUserLastLoginParams) (repository.AppUser, error)
 }
 
 type AppUserService struct {
@@ -58,6 +62,19 @@ func (service *AppUserService) CreateAppUser(ctx context.Context, appUserParams 
 		}
 	}
 	return dao, nil
+}
+
+func (service *AppUserService) SendUserEmailVerification(ctx context.Context, emailAddress string) error {
+
+	token, err := email_util.CreateEmailVerificationToken(emailAddress)
+	urlSafeToken := url.QueryEscape(token)
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+	//TODO: front end url from settings
+	email_util.SendSingleEmail(emailAddress, "Email Verification", urlSafeToken)
+	return nil
 }
 
 func (service *AppUserService) UpdateAppUser(ctx context.Context, appUserParams repository.UpdateAppUserParams) (repository.AppUser, error) {
@@ -141,6 +158,7 @@ func (service *AppUserService) makeTokenClaimMap(appUser repository.AppUser) map
 	claims["is_staff"] = appUser.IsStaff
 	claims["last_login"] = appUser.LastLogin
 	claims["date_joined"] = appUser.DateJoined
+	claims["email_verified"] = appUser.EmailVerified
 	return claims
 }
 

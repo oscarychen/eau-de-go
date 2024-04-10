@@ -60,3 +60,7 @@ Authorization: Bearer {{access_token}}
   "old_password": "{{password}}",
   "new_password": "{{password}}"
 }
+
+### Send user email verification
+POST {{server_url}}/api/user/send-email-verification/
+Authorization: Bearer {{access_token}}
