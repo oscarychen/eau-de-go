@@ -77,6 +77,25 @@ func (service *AppUserService) SendUserEmailVerification(ctx context.Context, em
 	return nil
 }
 
+func (service *AppUserService) VerifyEmailVerificationToken(ctx context.Context, userId uuid.UUID, userEmailAddress string, token string) (bool, error) {
+	verifiedEmail, err := email_util.VerifyEmailVerificationToken(token)
+	if err != nil {
+		log.Error(err)
+		return false, err
+	}
+
+	if verifiedEmail != userEmailAddress {
+		return false, errors.New("email address does not match")
+	}
+
+	_, err = service.AppUserStore.SetUserEmailVerified(ctx, userId)
+	if err != nil {
+		log.Error(err)
+		return false, err
+	}
+	return true, nil
+}
+
 func (service *AppUserService) UpdateAppUser(ctx context.Context, appUserParams repository.UpdateAppUserParams) (repository.AppUser, error) {
 	dao, err := service.AppUserStore.UpdateAppUser(ctx, appUserParams)
 	if err != nil {

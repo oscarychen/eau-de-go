@@ -49,6 +49,7 @@ func (h *Handler) mapRoutes() {
 	h.ProtectedRouter.HandleFunc("/user/me/", h.UpdateAppUser).Methods("PATCH")
 
 	h.ProtectedRouter.HandleFunc("/user/send-email-verification/", h.SendUserEmailVerification).Methods("POST")
+	h.ProtectedRouter.HandleFunc("/user/verify-email-token/", h.VerifyEmailToken).Methods("POST")
 }
 
 func (h *Handler) Serve() error {

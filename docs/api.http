@@ -64,3 +64,7 @@ Authorization: Bearer {{access_token}}
 ### Send user email verification
 POST {{server_url}}/api/user/send-email-verification/
 Authorization: Bearer {{access_token}}
+
+### Verify user email verification token
+POST {{server_url}}/api/user/verify-email-token/?token=xbcNb3CheZ3okI4hhjLCQLu9Vg3kl%2FiMh9pT%2BQivvgfwk%2BLmOyczBu20l0QViG7%2B8D3Hex%2BsMSFF%2BtGPkTU5LfkJ1TrZL98WSolmpY8%2FPWqObZUGpn6RPrLqapaadbOdcY71SxUsHcgKXPGiJUZuQ%2BJVrSldOPr495MAB15IpUF79lqC5sIEJk1tXMIiNF5e4wRDp5%2FyYZszZQ%3D%3D
+Authorization: Bearer {{access_token}}
