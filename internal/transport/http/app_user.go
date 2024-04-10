@@ -24,6 +24,7 @@ type AppUserService interface {
 	UpdateAppUserPassword(ctx context.Context, userId uuid.UUID, oldPassword string, newPassword string) (repository.AppUser, error)
 	GetAppUserTokens(appUser repository.AppUser) (string, map[string]interface{}, string, map[string]interface{}, error)
 	RefreshToken(ctx context.Context, refreshToken string) (string, map[string]interface{}, repository.AppUser, error)
+	SendUserEmailVerification(ctx context.Context, emailAddress string) error
 }
 
 var refreshTokenCookieName = "refresh"
@@ -261,6 +262,37 @@ func (h *Handler) UpdateAppUserPassword(w http.ResponseWriter, r *http.Request) 
 	_, err = w.Write(jsonData)
 	if err != nil {
 		log.Errorf("Error writing response: %v", err)
+		return
+	}
+}
+
+func (h *Handler) SendUserEmailVerification(w http.ResponseWriter, r *http.Request) {
+	jwtClaims, ok := r.Context().Value("jwt_claims").(map[string]interface{})
+	if !ok {
+		http.Error(w, "Error parsing access token", http.StatusUnauthorized)
+		return
+	}
+
+	emailVerified, ok := jwtClaims["email_verified"].(bool)
+	if !ok {
+		log.Errorf("Error parsing access token: %v", jwtClaims)
+		http.Error(w, "Error parsing access token", http.StatusUnauthorized)
+		return
+	}
+	if emailVerified {
+		http.Error(w, "Email already verified", http.StatusBadRequest)
+		return
+	}
+
+	emailAddress, ok := jwtClaims["email"].(string)
+	if !ok {
+		log.Errorf("Error parsing access token: %v", jwtClaims)
+		http.Error(w, "Error parsing access token", http.StatusUnauthorized)
+	}
+
+	err := h.AppUserService.SendUserEmailVerification(r.Context(), emailAddress)
+	if err != nil {
+		log.Errorf("Error sending email: %v", err)
 		return
 	}
 }
