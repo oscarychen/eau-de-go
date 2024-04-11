@@ -5,10 +5,13 @@ import (
 	"database/sql"
 	"eau-de-go/internal/repository"
 	"eau-de-go/internal/service"
+	"eau-de-go/pkg/email_util"
 	"eau-de-go/pkg/password_util"
+	"errors"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"net/url"
 	"testing"
 )
 
@@ -39,6 +42,54 @@ func (m *MockAppUserStore) GetAppUserById(ctx context.Context, id uuid.UUID) (re
 func (m *MockAppUserStore) CreateAppUser(ctx context.Context, appUser repository.CreateAppUserParams) (repository.AppUser, error) {
 	args := m.Called(ctx, appUser)
 	return args.Get(0).(repository.AppUser), args.Error(1)
+}
+
+func (m *MockAppUserStore) SetUserEmailVerified(ctx context.Context, userId uuid.UUID) (repository.AppUser, error) {
+	args := m.Called(ctx, userId)
+	return args.Get(0).(repository.AppUser), args.Error(1)
+}
+
+func (m *MockAppUserStore) SetUserEmailUnverified(ctx context.Context, userId uuid.UUID) (repository.AppUser, error) {
+	args := m.Called(ctx, userId)
+	return args.Get(0).(repository.AppUser), args.Error(1)
+}
+
+func (m *MockAppUserStore) UpdateAppUserLastLogin(ctx context.Context, data repository.UpdateAppUserLastLoginParams) (repository.AppUser, error) {
+	args := m.Called(ctx, data)
+	return args.Get(0).(repository.AppUser), args.Error(1)
+}
+
+type MockEmailVerifier struct {
+	mock.Mock
+}
+
+func (m *MockEmailVerifier) CreateToken(email string) (string, error) {
+	args := m.Called(email)
+	return args.String(0), args.Error(1)
+}
+
+func (m *MockEmailVerifier) VerifyToken(tokenString string) (string, error) {
+	args := m.Called(tokenString)
+	return args.String(0), args.Error(1)
+}
+
+type MockEmailSender struct {
+	mock.Mock
+}
+
+func (m *MockEmailSender) makeMailBytes(toAddresses []string, mailSubject string, mailMessage string) []byte {
+	args := m.Called(toAddresses, mailSubject, mailMessage)
+	return args.Get(0).([]byte)
+}
+
+func (m *MockEmailSender) SendSingleEmail(recipientEmail string, mailSubject string, mailBody string) error {
+	args := m.Called(recipientEmail, mailSubject, mailBody)
+	return args.Error(0)
+}
+
+func (m *MockEmailSender) SendMassEmail(recipientEmails []string, mailSubject string, mailBody string) error {
+	args := m.Called(recipientEmails, mailSubject, mailBody)
+	return args.Error(0)
 }
 
 func TestCreateAppUser(t *testing.T) {
@@ -108,4 +159,115 @@ func TestUpdateAppUserPassword(t *testing.T) {
 	assert.NoError(t, err)
 
 	mockStore.AssertExpectations(t)
+}
+
+func TestVerifyEmailVerificationToken(t *testing.T) {
+	ctx := context.Background()
+	userId := uuid.New()
+	userEmailAddress := "test@example.com"
+	emailVerifier := email_util.NewEmailTokenVerifier()
+	token, _ := emailVerifier.CreateToken(userEmailAddress)
+
+	mockStore := new(MockAppUserStore)
+	mockStore.On("SetUserEmailVerified", ctx, userId).Return(repository.AppUser{}, nil)
+
+	s := service.NewAppUserService(mockStore)
+
+	_, err := s.VerifyEmailVerificationToken(ctx, userId, userEmailAddress, token)
+
+	assert.NoError(t, err)
+	mockStore.AssertExpectations(t)
+	mockStore.AssertCalled(t, "SetUserEmailVerified", ctx, userId)
+}
+
+func TestVerifyEmailVerificationToken_InvalidToken(t *testing.T) {
+	ctx := context.Background()
+	userId := uuid.New()
+	userEmailAddress := "test@example.com"
+	token := "bad_token"
+
+	mockStore := new(MockAppUserStore)
+
+	s := service.NewAppUserService(mockStore)
+
+	_, err := s.VerifyEmailVerificationToken(ctx, userId, userEmailAddress, token)
+
+	assert.Error(t, err)
+	mockStore.AssertExpectations(t)
+	mockStore.AssertNotCalled(t, "SetUserEmailVerified", ctx, userId)
+}
+
+func TestVerifyEmailVerificationToken_EmailMismatch(t *testing.T) {
+	ctx := context.Background()
+	userId := uuid.New()
+	userEmailAddress := "test@example.com"
+	emailVerifier := email_util.NewEmailTokenVerifier()
+	token, _ := emailVerifier.CreateToken("wrong@email.com")
+
+	mockStore := new(MockAppUserStore)
+
+	s := service.NewAppUserService(mockStore)
+
+	_, err := s.VerifyEmailVerificationToken(ctx, userId, userEmailAddress, token)
+
+	assert.Error(t, err)
+	mockStore.AssertExpectations(t)
+	mockStore.AssertNotCalled(t, "SetUserEmailVerified", ctx, userId)
+}
+
+func TestSendEmailVerification_Success(t *testing.T) {
+	emailAddress := "test@example.com"
+	mockVerifier := new(MockEmailVerifier)
+	mockVerifier.On("CreateToken", emailAddress).Return("token", nil)
+
+	mockSender := new(MockEmailSender)
+	mockSender.On("SendSingleEmail", emailAddress, "Email Verification", url.QueryEscape("token")).Return(nil)
+
+	s := service.NewAppUserService(nil)
+
+	s.EmailVerifier = mockVerifier
+	s.EmailSender = mockSender
+
+	err := s.SendUserEmailVerification(context.Background(), emailAddress)
+
+	assert.NoError(t, err)
+	mockVerifier.AssertExpectations(t)
+	mockSender.AssertExpectations(t)
+
+}
+
+func TestSendEmailVerification_TokenCreationError(t *testing.T) {
+	emailAddress := "test@example.com"
+	mockVerifier := new(MockEmailVerifier)
+	mockVerifier.On("CreateToken", emailAddress).Return("", errors.New("token creation error"))
+
+	mockSender := new(MockEmailSender)
+
+	s := service.NewAppUserService(nil)
+	s.EmailVerifier = mockVerifier
+	s.EmailSender = mockSender
+
+	err := s.SendUserEmailVerification(context.Background(), emailAddress)
+
+	assert.Error(t, err)
+	mockVerifier.AssertExpectations(t)
+}
+
+func TestSendEmailVerification_EmailSendingError(t *testing.T) {
+	emailAddress := "test@example.com"
+	mockVerifier := new(MockEmailVerifier)
+	mockVerifier.On("CreateToken", emailAddress).Return("token", nil)
+
+	mockSender := new(MockEmailSender)
+	mockSender.On("SendSingleEmail", emailAddress, "Email Verification", mock.Anything).Return(errors.New("email sending error"))
+
+	s := service.NewAppUserService(nil)
+	s.EmailVerifier = mockVerifier
+	s.EmailSender = mockSender
+
+	err := s.SendUserEmailVerification(context.Background(), emailAddress)
+
+	assert.Error(t, err)
+	mockVerifier.AssertExpectations(t)
+	mockSender.AssertExpectations(t)
 }

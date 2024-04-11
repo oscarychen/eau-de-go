@@ -20,7 +20,19 @@ type EmailVerificationTokenClaims struct {
 
 var NowFunc = time.Now
 
-func CreateEmailVerificationToken(email string) (string, error) {
+type EmailTokenVerifier interface {
+	CreateToken(email string) (string, error)
+	VerifyToken(token string) (string, error)
+}
+
+type emailTokenVerifier struct {
+}
+
+func NewEmailTokenVerifier() *emailTokenVerifier {
+	return &emailTokenVerifier{}
+}
+
+func (e *emailTokenVerifier) CreateToken(email string) (string, error) {
 
 	key := keys.GetInMemoryAesKey()
 	fmt.Println(key)
@@ -54,7 +66,7 @@ func CreateEmailVerificationToken(email string) (string, error) {
 	return tokenString, nil
 }
 
-func VerifyEmailVerificationToken(tokenString string) (string, error) {
+func (e *emailTokenVerifier) VerifyToken(tokenString string) (string, error) {
 
 	key := keys.GetInMemoryAesKey()
 

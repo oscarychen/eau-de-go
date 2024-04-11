@@ -25,12 +25,16 @@ type AppUserStore interface {
 }
 
 type AppUserService struct {
-	AppUserStore AppUserStore
+	AppUserStore  AppUserStore
+	EmailVerifier email_util.EmailTokenVerifier
+	EmailSender   email_util.EmailSender
 }
 
 func NewAppUserService(appUserStore AppUserStore) *AppUserService {
 	return &AppUserService{
-		AppUserStore: appUserStore,
+		AppUserStore:  appUserStore,
+		EmailVerifier: email_util.NewEmailTokenVerifier(),
+		EmailSender:   email_util.NewEmailSender(),
 	}
 }
 
@@ -66,19 +70,23 @@ func (service *AppUserService) CreateAppUser(ctx context.Context, appUserParams 
 
 func (service *AppUserService) SendUserEmailVerification(ctx context.Context, emailAddress string) error {
 
-	token, err := email_util.CreateEmailVerificationToken(emailAddress)
+	token, err := service.EmailVerifier.CreateToken(emailAddress)
 	urlSafeToken := url.QueryEscape(token)
 	if err != nil {
 		log.Error(err)
 		return err
 	}
 	//TODO: front end url from settings
-	email_util.SendSingleEmail(emailAddress, "Email Verification", urlSafeToken)
+	err = service.EmailSender.SendSingleEmail(emailAddress, "Email Verification", urlSafeToken)
+	if err != nil {
+		log.Error(err)
+		return err
+	}
 	return nil
 }
 
 func (service *AppUserService) VerifyEmailVerificationToken(ctx context.Context, userId uuid.UUID, userEmailAddress string, token string) (bool, error) {
-	verifiedEmail, err := email_util.VerifyEmailVerificationToken(token)
+	verifiedEmail, err := service.EmailVerifier.VerifyToken(token)
 	if err != nil {
 		log.Error(err)
 		return false, err

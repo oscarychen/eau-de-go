@@ -3,12 +3,33 @@ package email_util
 import (
 	"eau-de-go/settings"
 	"fmt"
-	"log"
 	"net/smtp"
 	"strings"
 )
 
-func makeMailBytes(toAddresses []string, mailSubject string, mailMessage string) []byte {
+type EmailSender interface {
+	SendSingleEmail(recipientEmail string, mailSubject string, mailBody string) error
+	SendMassEmail(recipientEmails []string, mailSubject string, mailBody string) error
+}
+
+type emailSender struct {
+	EmailHost         string
+	EmailPort         string
+	EmailHostUser     string
+	EmailHostPassword string
+}
+
+// NewEmailSender creates a new EmailSender
+func NewEmailSender() *emailSender {
+	return &emailSender{
+		EmailHost:         settings.EmailHost,
+		EmailPort:         settings.EmailPort,
+		EmailHostUser:     settings.EmailHostUser,
+		EmailHostPassword: settings.EmailHostPassword,
+	}
+}
+
+func (e *emailSender) makeMailBytes(toAddresses []string, mailSubject string, mailMessage string) []byte {
 	mail := fmt.Sprintf("Subject: %s\r\n\r\n%s", mailSubject, mailMessage)
 
 	if len(toAddresses) > 0 {
@@ -19,30 +40,26 @@ func makeMailBytes(toAddresses []string, mailSubject string, mailMessage string)
 }
 
 // SendSingleEmail sends an email to a single user
-func SendSingleEmail(recipientEmail string, mailSubject string, mailBody string) {
+func (e *emailSender) SendSingleEmail(recipientEmail string, mailSubject string, mailBody string) error {
 
 	recipients := []string{recipientEmail}
 
-	mailBytes := makeMailBytes(recipients, mailSubject, mailBody)
+	mailBytes := e.makeMailBytes(recipients, mailSubject, mailBody)
 
-	fullServerAddress := settings.EmailHost + ":" + settings.EmailPort
-	auth := smtp.PlainAuth("", settings.EmailHostUser, settings.EmailHostPassword, settings.EmailHost)
-	err := smtp.SendMail(fullServerAddress, auth, settings.EmailHostUser, recipients, mailBytes)
+	fullServerAddress := e.EmailHost + ":" + e.EmailPort
+	auth := smtp.PlainAuth("", e.EmailHostUser, e.EmailHostPassword, e.EmailHost)
+	err := smtp.SendMail(fullServerAddress, auth, e.EmailHostUser, recipients, mailBytes)
 
-	if err != nil {
-		log.Fatal(err)
-	}
+	return err
 }
 
 // SendMassEmail sends an email to multiple users, where user emails are not included in the email body to avoid recipients from seeing each other's email addresses
-func SendMassEmail(recipientEmails []string, mailSubject string, mailBody string) {
-	mailBytes := makeMailBytes([]string{}, mailSubject, mailBody)
+func (e *emailSender) SendMassEmail(recipientEmails []string, mailSubject string, mailBody string) error {
+	mailBytes := e.makeMailBytes([]string{}, mailSubject, mailBody)
 
-	fullServerAddress := settings.EmailHost + ":" + settings.EmailPort
-	auth := smtp.PlainAuth("", settings.EmailHostUser, settings.EmailHostPassword, settings.EmailHost)
-	err := smtp.SendMail(fullServerAddress, auth, settings.EmailHostUser, recipientEmails, mailBytes)
+	fullServerAddress := e.EmailHost + ":" + e.EmailPort
+	auth := smtp.PlainAuth("", e.EmailHostUser, e.EmailHostPassword, e.EmailHost)
+	err := smtp.SendMail(fullServerAddress, auth, e.EmailHostUser, recipientEmails, mailBytes)
 
-	if err != nil {
-		log.Fatal(err)
-	}
+	return err
 }
