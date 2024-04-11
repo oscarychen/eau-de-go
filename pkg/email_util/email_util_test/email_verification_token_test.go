@@ -9,33 +9,37 @@ import (
 
 func TestEmailVerificationTokenCreationHappyPath(t *testing.T) {
 	email := "test@example.com"
-	token, err := email_util.CreateEmailVerificationToken(email)
+	emailVerifier := email_util.NewEmailTokenVerifier()
+	token, err := emailVerifier.CreateToken(email)
 	assert.NoError(t, err)
 	assert.NotNil(t, token)
 }
 
 func TestEmailVerificationTokenVerificationHappyPath(t *testing.T) {
 	email := "test@example.com"
-	token, _ := email_util.CreateEmailVerificationToken(email)
-	returnedEmail, err := email_util.VerifyEmailVerificationToken(token)
+	emailVerifier := email_util.NewEmailTokenVerifier()
+	token, err := emailVerifier.CreateToken(email)
+	returnedEmail, err := emailVerifier.VerifyToken(token)
 	assert.NoError(t, err)
 	assert.Equal(t, email, returnedEmail)
 }
 
 func TestEmailVerificationTokenVerificationInvalidToken(t *testing.T) {
 	token := "invalid token"
-	email, err := email_util.VerifyEmailVerificationToken(token)
+	emailVerifier := email_util.NewEmailTokenVerifier()
+	email, err := emailVerifier.VerifyToken(token)
 	assert.Error(t, err)
 	assert.Empty(t, email)
 }
 
 func TestEmailVerificationTokenVerificationExpiredToken(t *testing.T) {
 	email := "test@example.com"
-	token, _ := email_util.CreateEmailVerificationToken(email)
+	emailVerifier := email_util.NewEmailTokenVerifier()
+	token, err := emailVerifier.CreateToken(email)
 	email_util.NowFunc = func() time.Time {
 		return time.Now().Add(time.Hour * 13)
 	}
-	email, err := email_util.VerifyEmailVerificationToken(token)
+	email, err = emailVerifier.VerifyToken(token)
 	assert.Error(t, err)
 	assert.Empty(t, email)
 }

@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -22,6 +23,16 @@ var refreshTokenCookieName = "refresh"
 
 type MockAppUserService struct {
 	mock.Mock
+}
+
+func (m *MockAppUserService) SendUserEmailVerification(ctx context.Context, emailAddress string) error {
+	args := m.Called(ctx, emailAddress)
+	return args.Error(0)
+}
+
+func (m *MockAppUserService) VerifyEmailVerificationToken(ctx context.Context, userId uuid.UUID, emailAddress string, token string) (bool, error) {
+	args := m.Called(ctx, userId, emailAddress, token)
+	return args.Bool(0), args.Error(1)
 }
 
 func (m *MockAppUserService) UpdateAppUserPassword(ctx context.Context, userId uuid.UUID, oldPassword string, newPassword string) (repository.AppUser, error) {
@@ -174,4 +185,41 @@ func TestGetAppUserByIdNotFound(t *testing.T) {
 	router.ServeHTTP(rr, req)
 
 	assert.Equal(t, http.StatusNotFound, rr.Code)
+}
+
+func TestSendUserEmailVerification_Success(t *testing.T) {
+	emailAddress := "test@example.com"
+	mockService := new(MockAppUserService)
+	mockService.On("SendUserEmailVerification", mock.Anything, emailAddress).Return(nil)
+
+	req, _ := http.NewRequest("POST", "/api/user/send-email-verification/", strings.NewReader(""))
+	req = req.WithContext(context.WithValue(req.Context(), "jwt_claims", map[string]interface{}{
+		"email_verified": false,
+		"email":          emailAddress,
+	}))
+
+	recorder := httptest.NewRecorder()
+	handler := transportHttp.Handler{AppUserService: mockService}
+	handler.SendUserEmailVerification(recorder, req)
+
+	assert.Equal(t, http.StatusOK, recorder.Code)
+	mockService.AssertExpectations(t)
+}
+
+func TestSendUserEmailVerification_EmailAlreadyVerified(t *testing.T) {
+	emailAddress := "test@example.com"
+	mockService := new(MockAppUserService)
+
+	req, _ := http.NewRequest("POST", "/api/user/send-email-verification/", strings.NewReader(""))
+	req = req.WithContext(context.WithValue(req.Context(), "jwt_claims", map[string]interface{}{
+		"email_verified": true,
+		"email":          emailAddress,
+	}))
+
+	recorder := httptest.NewRecorder()
+	handler := transportHttp.Handler{AppUserService: mockService}
+	handler.SendUserEmailVerification(recorder, req)
+
+	assert.Equal(t, http.StatusBadRequest, recorder.Code)
+	mockService.AssertExpectations(t)
 }
