@@ -36,7 +36,7 @@ and allows configuration using environment variables.
 - JWT for authentication
 - Auth API endpoints
 - Basic user model and API endpoints
-- User email verification // TODO
+- User email verification
 
 
 ## Development
@@ -84,11 +84,18 @@ The refresh token is implicitly included in the response of the sign in request 
 and is only included in requests for obtaining a new access token.
 
 
-### API endpoints
+### Auth API endpoints
 The following API endpoints are included for authentication, for usage examples see the included [scratch file](docs/api.http).
 - `POST /auth/sign-up` - Sign up a new user
 - `POST /auth/login` - Sign in a user
 - `POST /auth/token-refresh` - Refresh the access token
+
+## Email
+Email helper is included to send emails using SMTP. To configure the email settings, set the following environment variables:
+- `EMAIL_HOST` - The SMTP server host
+- `EMAIL_PORT` - The SMTP server port
+- `EMAIL_HOST_USER` - The SMTP server username
+- `EMAIL_HOST_PASSWORD` - The SMTP server password
 
 ## User
 Some basic user features are included in this template.
@@ -98,6 +105,7 @@ SQLC is used to generate model using migration files located in ["schemata" dire
 The user model is included as a sample model, and includes the following fields:
 - `id` - The user's unique identifier (UUID)
 - `email` - The user's email address
+- `email_verified` - Whether the user's email address is verified
 - `password` - The user's password hash
 - `last_login` - The user's last login time // TODO: log in and refresh service logic
 - `first_name` - The user's first name
@@ -112,6 +120,8 @@ SQLC is used to generate repository functions using SQL queries located in ["sql
 ### User API endpoints
 - `PATCH /api/user/me` - Update the current user's details
 - `POST /api/user/me/change-password` - Change the current user's password
+- `POST /api/user/send-email-verification` - Send email verification email
+- `POST /api/user/verify-email` - Verify email
 
 ## Miscellaneous commands
 ```bash
