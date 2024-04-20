@@ -6,6 +6,7 @@ import (
 	"eau-de-go/internal/repository"
 	"eau-de-go/internal/service"
 	"eau-de-go/pkg/email_util"
+	"eau-de-go/pkg/jwt_util"
 	"eau-de-go/pkg/password_util"
 	"errors"
 	"github.com/google/uuid"
@@ -90,6 +91,20 @@ func (m *MockEmailSender) SendSingleEmail(recipientEmail string, mailSubject str
 func (m *MockEmailSender) SendMassEmail(recipientEmails []string, mailSubject string, mailBody string) error {
 	args := m.Called(recipientEmails, mailSubject, mailBody)
 	return args.Error(0)
+}
+
+type MockJwtUtil struct {
+	mock.Mock
+}
+
+func (m *MockJwtUtil) DecodeToken(tokenType jwt_util.TokenType, token string) (map[string]interface{}, error) {
+	args := m.Called(tokenType, token)
+	return args.Get(0).(map[string]interface{}), args.Error(1)
+}
+
+func (m *MockJwtUtil) CreateAccessToken(claims map[string]interface{}) (string, map[string]interface{}, error) {
+	args := m.Called(claims)
+	return args.String(0), args.Get(1).(map[string]interface{}), args.Error(2)
 }
 
 func TestCreateAppUser(t *testing.T) {

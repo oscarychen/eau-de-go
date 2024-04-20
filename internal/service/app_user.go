@@ -236,5 +236,10 @@ func (service *AppUserService) RefreshToken(ctx context.Context, refreshToken st
 		return "", nil, repository.AppUser{}, err
 	}
 
+	_, err = service.AppUserStore.UpdateAppUserLastLoginNow(ctx, appUser.ID)
+	if err != nil {
+		log.Error(err)
+	}
+
 	return accessToken, claims, appUser, nil
 }
