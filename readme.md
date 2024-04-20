@@ -107,7 +107,7 @@ The user model is included as a sample model, and includes the following fields:
 - `email` - The user's email address
 - `email_verified` - Whether the user's email address is verified
 - `password` - The user's password hash
-- `last_login` - The user's last login time // TODO: log in and refresh service logic
+- `last_login` - The user's last login time
 - `first_name` - The user's first name
 - `last_name` - The user's last name
 - `is_staff` - Whether the user is a staff member // TODO: router middleware
