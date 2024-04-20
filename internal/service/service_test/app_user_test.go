@@ -54,8 +54,8 @@ func (m *MockAppUserStore) SetUserEmailUnverified(ctx context.Context, userId uu
 	return args.Get(0).(repository.AppUser), args.Error(1)
 }
 
-func (m *MockAppUserStore) UpdateAppUserLastLogin(ctx context.Context, data repository.UpdateAppUserLastLoginParams) (repository.AppUser, error) {
-	args := m.Called(ctx, data)
+func (m *MockAppUserStore) UpdateAppUserLastLoginNow(ctx context.Context, userId uuid.UUID) (repository.AppUser, error) {
+	args := m.Called(ctx, userId)
 	return args.Get(0).(repository.AppUser), args.Error(1)
 }
 
@@ -159,6 +159,57 @@ func TestUpdateAppUserPassword(t *testing.T) {
 	assert.NoError(t, err)
 
 	mockStore.AssertExpectations(t)
+}
+
+func TestLoginWithValidCredentials(t *testing.T) {
+	mockStore := new(MockAppUserStore)
+	s := service.AppUserService{AppUserStore: mockStore}
+	username := "user"
+	password := "P4ssword!123"
+	passwordHash, err := password_util.HashPassword(password)
+	assert.NoError(t, err)
+
+	user := repository.AppUser{ID: uuid.New(), Username: username, Password: string(passwordHash)}
+	mockStore.On("GetAppUserByUsername", mock.Anything, username).Return(user, nil)
+	mockStore.On("UpdateAppUserLastLoginNow", mock.Anything, user.ID).Return(user, nil)
+
+	result, err := s.Login(context.Background(), username, password)
+
+	assert.NoError(t, err)
+	assert.Equal(t, username, result.Username)
+	mockStore.AssertExpectations(t)
+}
+
+func TestLoginWithInvalidUsername(t *testing.T) {
+	mockStore := new(MockAppUserStore)
+	s := service.AppUserService{AppUserStore: mockStore}
+
+	mockStore.On("GetAppUserByUsername", mock.Anything, "invalid").Return(repository.AppUser{}, errors.New("user not found"))
+
+	_, err := s.Login(context.Background(), "invalid", "password")
+
+	assert.Error(t, err)
+	mockStore.AssertExpectations(t)
+	mockStore.AssertNotCalled(t, "UpdateAppUserLastLoginNow")
+}
+
+func TestLoginWithInvalidPassword(t *testing.T) {
+	mockStore := new(MockAppUserStore)
+	s := service.AppUserService{AppUserStore: mockStore}
+	username := "user"
+	password := "P4ssword!123"
+	passwordHash, err := password_util.HashPassword(password)
+	assert.NoError(t, err)
+
+	user := repository.AppUser{ID: uuid.New(), Username: username, Password: string(passwordHash)}
+	mockStore.On("GetAppUserByUsername", mock.Anything, username).Return(user, nil)
+
+	result, err := s.Login(context.Background(), username, "wrong password")
+
+	assert.Empty(t, result)
+	assert.Error(t, err)
+	mockStore.AssertExpectations(t)
+	mockStore.AssertNotCalled(t, "UpdateAppUserLastLoginNow")
 }
 
 func TestVerifyEmailVerificationToken(t *testing.T) {

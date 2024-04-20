@@ -306,20 +306,15 @@ func (q *Queries) UpdateAppUser(ctx context.Context, arg UpdateAppUserParams) (A
 	return i, err
 }
 
-const updateAppUserLastLogin = `-- name: UpdateAppUserLastLogin :one
+const updateAppUserLastLoginNow = `-- name: UpdateAppUserLastLoginNow :one
 UPDATE app_user
-SET last_login = $2
+SET last_login = current_timestamp(0)
 WHERE id = $1
     RETURNING id, username, email, email_verified, password, last_login, first_name, last_name, is_staff, is_active, date_joined
 `
 
-type UpdateAppUserLastLoginParams struct {
-	ID        uuid.UUID    `json:"id"`
-	LastLogin sql.NullTime `json:"last_login"`
-}
-
-func (q *Queries) UpdateAppUserLastLogin(ctx context.Context, arg UpdateAppUserLastLoginParams) (AppUser, error) {
-	row := q.db.QueryRowContext(ctx, updateAppUserLastLogin, arg.ID, arg.LastLogin)
+func (q *Queries) UpdateAppUserLastLoginNow(ctx context.Context, id uuid.UUID) (AppUser, error) {
+	row := q.db.QueryRowContext(ctx, updateAppUserLastLoginNow, id)
 	var i AppUser
 	err := row.Scan(
 		&i.ID,

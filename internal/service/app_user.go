@@ -21,7 +21,7 @@ type AppUserStore interface {
 	GetAppUserByUsername(ctx context.Context, username string) (repository.AppUser, error)
 	SetUserEmailVerified(ctx context.Context, userId uuid.UUID) (repository.AppUser, error)
 	SetUserEmailUnverified(ctx context.Context, userId uuid.UUID) (repository.AppUser, error)
-	UpdateAppUserLastLogin(ctx context.Context, data repository.UpdateAppUserLastLoginParams) (repository.AppUser, error)
+	UpdateAppUserLastLoginNow(ctx context.Context, userId uuid.UUID) (repository.AppUser, error)
 }
 
 type AppUserService struct {
@@ -170,6 +170,10 @@ func (service *AppUserService) Login(ctx context.Context, username string, passw
 	}
 	if err := password_util.CheckPassword(password, []byte(dao.Password)); err != nil {
 		return repository.AppUser{}, &repository.IncorrectUserCredentialError{}
+	}
+	_, err = service.AppUserStore.UpdateAppUserLastLoginNow(ctx, dao.ID)
+	if err != nil {
+		log.Error(err)
 	}
 	return dao, nil
 }

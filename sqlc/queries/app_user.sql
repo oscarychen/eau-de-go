@@ -38,9 +38,9 @@ SET password = sqlc.arg('password')
 WHERE id = sqlc.arg('id')
     RETURNING *;
 
--- name: UpdateAppUserLastLogin :one
+-- name: UpdateAppUserLastLoginNow :one
 UPDATE app_user
-SET last_login = $2
+SET last_login = current_timestamp(0)
 WHERE id = $1
     RETURNING *;
 
