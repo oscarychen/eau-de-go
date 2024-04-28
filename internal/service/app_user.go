@@ -175,7 +175,16 @@ func (service *AppUserService) Login(ctx context.Context, username string, passw
 	if err != nil {
 		log.Error(err)
 	}
+
+	if !service.DoesUserHaveAppAccess(ctx, dao) {
+		return repository.AppUser{}, &repository.InactiveUserError{Username: dao.Username}
+	}
+
 	return dao, nil
+}
+
+func (service *AppUserService) DoesUserHaveAppAccess(ctx context.Context, user repository.AppUser) bool {
+	return user.IsActive
 }
 
 func (service *AppUserService) makeTokenClaimMap(appUser repository.AppUser) map[string]interface{} {
@@ -229,6 +238,16 @@ func (service *AppUserService) RefreshToken(ctx context.Context, refreshToken st
 	}
 
 	appUser, err := service.GetAppUserById(ctx, userId)
+	if err != nil {
+		log.Error(err)
+		return "", nil, repository.AppUser{}, err
+
+	}
+
+	if !service.DoesUserHaveAppAccess(ctx, appUser) {
+		return "", nil, repository.AppUser{}, &repository.InactiveUserError{Username: appUser.Username}
+	}
+
 	tokenClaims := service.makeTokenClaimMap(appUser)
 	accessToken, claims, err := jwt_util.CreateAccessToken(tokenClaims)
 	if err != nil {

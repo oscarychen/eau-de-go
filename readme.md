@@ -110,8 +110,8 @@ The user model is included as a sample model, and includes the following fields:
 - `last_login` - The user's last login time
 - `first_name` - The user's first name
 - `last_name` - The user's last name
-- `is_staff` - Whether the user is a staff member // TODO: router middleware
-- `is_active` - Whether the user is active // TODO: log in and refresh service logic
+- `is_staff` - Whether the user is a staff member
+- `is_active` - Whether the user is active
 - `date_joined` - The user's date of joining // TODO: sign up service logic
 
 ### User queries

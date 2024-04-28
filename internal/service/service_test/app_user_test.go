@@ -184,7 +184,7 @@ func TestLoginWithValidCredentials(t *testing.T) {
 	passwordHash, err := password_util.HashPassword(password)
 	assert.NoError(t, err)
 
-	user := repository.AppUser{ID: uuid.New(), Username: username, Password: string(passwordHash)}
+	user := repository.AppUser{ID: uuid.New(), Username: username, Password: string(passwordHash), IsActive: true}
 	mockStore.On("GetAppUserByUsername", mock.Anything, username).Return(user, nil)
 	mockStore.On("UpdateAppUserLastLoginNow", mock.Anything, user.ID).Return(user, nil)
 
@@ -225,6 +225,25 @@ func TestLoginWithInvalidPassword(t *testing.T) {
 	assert.Error(t, err)
 	mockStore.AssertExpectations(t)
 	mockStore.AssertNotCalled(t, "UpdateAppUserLastLoginNow")
+}
+
+func TestInactiveUserCannotLogIn(t *testing.T) {
+	mockStore := new(MockAppUserStore)
+	s := service.AppUserService{AppUserStore: mockStore}
+	username := "user"
+	password := "P4ssword!123"
+	passwordHash, err := password_util.HashPassword(password)
+	assert.NoError(t, err)
+
+	user := repository.AppUser{ID: uuid.New(), Username: username, Password: string(passwordHash), IsActive: false}
+	mockStore.On("GetAppUserByUsername", mock.Anything, username).Return(user, nil)
+	mockStore.On("UpdateAppUserLastLoginNow", mock.Anything, user.ID).Return(user, nil)
+
+	result, err := s.Login(context.Background(), username, password)
+
+	assert.Error(t, err)
+	assert.Empty(t, result)
+	mockStore.AssertExpectations(t)
 }
 
 func TestVerifyEmailVerificationToken(t *testing.T) {
