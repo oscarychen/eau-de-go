@@ -1,5 +1,7 @@
 package repository
 
+import "fmt"
+
 type DuplicateKeyError struct {
 	Key string
 }
@@ -12,4 +14,12 @@ type IncorrectUserCredentialError struct{}
 
 func (e *IncorrectUserCredentialError) Error() string {
 	return "Incorrect credentials"
+}
+
+type InactiveUserError struct {
+	Username string
+}
+
+func (e *InactiveUserError) Error() string {
+	return fmt.Sprintf("User %s is inactive", e.Username)
 }

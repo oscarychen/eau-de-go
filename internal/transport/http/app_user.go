@@ -94,7 +94,7 @@ func (h *Handler) TokenRefresh(w http.ResponseWriter, r *http.Request) {
 	refreshToken := refreshTokenCookie.Value
 	accessToken, _, appUser, err := h.AppUserService.RefreshToken(r.Context(), refreshToken)
 	if err != nil {
-		http.Error(w, "Invalid token", http.StatusUnauthorized)
+		http.Error(w, "Unable to refresh token", http.StatusUnauthorized)
 		return
 	}
 
