@@ -12,7 +12,10 @@ func TestCreateRefreshToken(t *testing.T) {
 	claims := map[string]interface{}{
 		"username": "testuser",
 	}
-	token, tokenClaims, err := jwt_util.CreateRefreshToken(claims)
+
+	jwtUtil := jwt_util.NewJwtUtil()
+
+	token, tokenClaims, err := jwtUtil.CreateRefreshToken(claims)
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
@@ -33,11 +36,14 @@ func TestDecodeToken(t *testing.T) {
 	claims := map[string]interface{}{
 		"username": "testuser",
 	}
-	token, _, err := jwt_util.CreateRefreshToken(claims)
+
+	jwtUtil := jwt_util.NewJwtUtil()
+
+	token, _, err := jwtUtil.CreateRefreshToken(claims)
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
-	decodedClaims, err := jwt_util.DecodeToken(jwt_util.Refresh, token)
+	decodedClaims, err := jwtUtil.DecodeToken(jwt_util.Refresh, token)
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
@@ -47,7 +53,9 @@ func TestDecodeToken(t *testing.T) {
 }
 
 func TestDecodeInvalidToken(t *testing.T) {
-	_, err := jwt_util.DecodeToken(jwt_util.Refresh, "invalidToken")
+	jwtUtil := jwt_util.NewJwtUtil()
+
+	_, err := jwtUtil.DecodeToken(jwt_util.Refresh, "invalidToken")
 	if err == nil {
 		t.Error("Expected error for invalid token")
 	}
@@ -57,17 +65,18 @@ func TestTokenExpiry(t *testing.T) {
 	claims := map[string]interface{}{
 		"username": "testuser",
 	}
+	jwtUtil := jwt_util.NewJwtUtil()
 
 	jwt_util.NowFunc = func() time.Time {
 		return time.Now().Add(-settings.RefreshTokenLife - time.Minute)
 	}
 
-	token, _, err := jwt_util.CreateRefreshToken(claims)
+	token, _, err := jwtUtil.CreateRefreshToken(claims)
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
 
-	_, err = jwt_util.DecodeToken(jwt_util.Refresh, token)
+	_, err = jwtUtil.DecodeToken(jwt_util.Refresh, token)
 	if err == nil {
 		t.Error("Expected error for expired token")
 	}

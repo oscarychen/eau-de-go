@@ -32,7 +32,9 @@ func JwtAuthMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		claims, err := jwt_util.DecodeToken(jwt_util.Access, accessTokenString)
+		jwtUtil := jwt_util.NewJwtUtil()
+
+		claims, err := jwtUtil.DecodeToken(jwt_util.Access, accessTokenString)
 		if err != nil {
 			http.Error(w, "Invalid token", http.StatusUnauthorized)
 			return

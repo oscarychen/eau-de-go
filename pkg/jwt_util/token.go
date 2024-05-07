@@ -17,16 +17,30 @@ const (
 
 var NowFunc = time.Now
 
-func injectStandardClaims(claims map[string]interface{}) {
+type JwtUtil interface {
+	CreateRefreshToken(claims map[string]interface{}) (string, map[string]interface{}, error)
+	CreateAccessToken(claims map[string]interface{}) (string, map[string]interface{}, error)
+	DecodeToken(tokenType TokenType, tokenString string) (map[string]interface{}, error)
+	CopyTokenClaims(claims map[string]interface{}) map[string]interface{}
+}
+
+type jwtUtil struct {
+}
+
+func NewJwtUtil() *jwtUtil {
+	return &jwtUtil{}
+}
+
+func (j *jwtUtil) injectStandardClaims(claims map[string]interface{}) {
 
 	now := NowFunc()
 	claims["iat"] = now.Unix()
 	claims["jti"] = uuid.New().String()
 }
 
-func createToken(claims map[string]interface{}) (string, map[string]interface{}, error) {
+func (j *jwtUtil) createToken(claims map[string]interface{}) (string, map[string]interface{}, error) {
 
-	injectStandardClaims(claims)
+	j.injectStandardClaims(claims)
 	token := jwt.NewWithClaims(jwt.SigningMethodPS256, jwt.MapClaims(claims))
 
 	signingKey, err := keys.GetInMemoryRsaKeyPair().GetSigningKey()
@@ -38,7 +52,7 @@ func createToken(claims map[string]interface{}) (string, map[string]interface{},
 	return tokenString, claims, nil
 }
 
-func DecodeToken(tokenType TokenType, tokenString string) (map[string]interface{}, error) {
+func (j *jwtUtil) DecodeToken(tokenType TokenType, tokenString string) (map[string]interface{}, error) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		return keys.GetInMemoryRsaKeyPair().GetVerificationKey()
 	})
@@ -49,10 +63,10 @@ func DecodeToken(tokenType TokenType, tokenString string) (map[string]interface{
 	}
 
 	if claims, ok := token.Claims.(jwt.MapClaims); ok {
-		if err := validateTokenTypes(claims, tokenType); err != nil {
+		if err := j.validateTokenTypes(claims, tokenType); err != nil {
 			return nil, err
 		}
-		if err := validateJti(claims); err != nil {
+		if err := j.validateJti(claims); err != nil {
 			return nil, err
 		}
 		return claims, nil
@@ -61,7 +75,7 @@ func DecodeToken(tokenType TokenType, tokenString string) (map[string]interface{
 	}
 }
 
-func validateTokenTypes(claims map[string]interface{}, tokenType TokenType) error {
+func (j *jwtUtil) validateTokenTypes(claims map[string]interface{}, tokenType TokenType) error {
 	if claims["token_type"] != string(tokenType) {
 		msg := "Invalid token type."
 		return &InvalidTokenError{msg: &msg}
@@ -69,25 +83,25 @@ func validateTokenTypes(claims map[string]interface{}, tokenType TokenType) erro
 	return nil
 }
 
-func validateJti(claims map[string]interface{}) error {
+func (j *jwtUtil) validateJti(claims map[string]interface{}) error {
 	return nil
 }
 
-func CreateRefreshToken(claims map[string]interface{}) (string, map[string]interface{}, error) {
-	tokenClaims := CopyTokenClaims(claims)
+func (j *jwtUtil) CreateRefreshToken(claims map[string]interface{}) (string, map[string]interface{}, error) {
+	tokenClaims := j.CopyTokenClaims(claims)
 	tokenClaims["token_type"] = Refresh
 	tokenClaims["exp"] = NowFunc().Add(settings.RefreshTokenLife).Unix()
-	return createToken(tokenClaims)
+	return j.createToken(tokenClaims)
 }
 
-func CreateAccessToken(claims map[string]interface{}) (string, map[string]interface{}, error) {
-	tokenClaims := CopyTokenClaims(claims)
+func (j *jwtUtil) CreateAccessToken(claims map[string]interface{}) (string, map[string]interface{}, error) {
+	tokenClaims := j.CopyTokenClaims(claims)
 	tokenClaims["token_type"] = Access
 	tokenClaims["exp"] = NowFunc().Add(settings.AccessTokenLife).Unix()
-	return createToken(tokenClaims)
+	return j.createToken(tokenClaims)
 }
 
-func CopyTokenClaims(claims map[string]interface{}) map[string]interface{} {
+func (j *jwtUtil) CopyTokenClaims(claims map[string]interface{}) map[string]interface{} {
 	copiedClaimns := make(map[string]interface{})
 	for key, value := range claims {
 		if key != "exp" && key != "iat" && key != "jti" && key != "token_type" {
