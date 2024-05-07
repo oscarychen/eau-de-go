@@ -26,6 +26,7 @@ type AppUserStore interface {
 
 type AppUserService struct {
 	AppUserStore  AppUserStore
+	JwtUtil       jwt_util.JwtUtil
 	EmailVerifier email_util.EmailTokenVerifier
 	EmailSender   email_util.EmailSender
 }
@@ -33,6 +34,7 @@ type AppUserService struct {
 func NewAppUserService(appUserStore AppUserStore) *AppUserService {
 	return &AppUserService{
 		AppUserStore:  appUserStore,
+		JwtUtil:       jwt_util.NewJwtUtil(),
 		EmailVerifier: email_util.NewEmailTokenVerifier(),
 		EmailSender:   email_util.NewEmailSender(),
 	}
@@ -205,13 +207,13 @@ func (service *AppUserService) makeTokenClaimMap(appUser repository.AppUser) map
 func (service *AppUserService) GetAppUserTokens(appUser repository.AppUser) (string, map[string]interface{}, string, map[string]interface{}, error) {
 	claims := service.makeTokenClaimMap(appUser)
 
-	refreshToken, refreshTokenClaims, err := jwt_util.CreateRefreshToken(claims)
+	refreshToken, refreshTokenClaims, err := service.JwtUtil.CreateRefreshToken(claims)
 	if err != nil {
 		log.Error(err)
 		return "", nil, "", nil, err
 	}
 
-	accessToken, accessTokenClaims, err := jwt_util.CreateAccessToken(claims)
+	accessToken, accessTokenClaims, err := service.JwtUtil.CreateAccessToken(claims)
 	if err != nil {
 		log.Error(err)
 		return "", nil, "", nil, err
@@ -220,7 +222,7 @@ func (service *AppUserService) GetAppUserTokens(appUser repository.AppUser) (str
 }
 
 func (service *AppUserService) RefreshToken(ctx context.Context, refreshToken string) (string, map[string]interface{}, repository.AppUser, error) {
-	refreshTokenClaims, err := jwt_util.DecodeToken(jwt_util.Refresh, refreshToken)
+	refreshTokenClaims, err := service.JwtUtil.DecodeToken(jwt_util.Refresh, refreshToken)
 	if err != nil {
 		log.Error(err)
 		return "", nil, repository.AppUser{}, &jwt_util.InvalidTokenError{}
@@ -249,7 +251,7 @@ func (service *AppUserService) RefreshToken(ctx context.Context, refreshToken st
 	}
 
 	tokenClaims := service.makeTokenClaimMap(appUser)
-	accessToken, claims, err := jwt_util.CreateAccessToken(tokenClaims)
+	accessToken, claims, err := service.JwtUtil.CreateAccessToken(tokenClaims)
 	if err != nil {
 		log.Error(err)
 		return "", nil, repository.AppUser{}, err
