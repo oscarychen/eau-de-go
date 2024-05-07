@@ -107,6 +107,16 @@ func (m *MockJwtUtil) CreateAccessToken(claims map[string]interface{}) (string, 
 	return args.String(0), args.Get(1).(map[string]interface{}), args.Error(2)
 }
 
+func (m *MockJwtUtil) CreateRefreshToken(claims map[string]interface{}) (string, map[string]interface{}, error) {
+	args := m.Called(claims)
+	return args.String(0), args.Get(1).(map[string]interface{}), args.Error(2)
+}
+
+func (m *MockJwtUtil) CopyTokenClaims(claims map[string]interface{}) map[string]interface{} {
+	args := m.Called(claims)
+	return args.Get(0).(map[string]interface{})
+}
+
 func TestCreateAppUser(t *testing.T) {
 	mockStore := new(MockAppUserStore)
 	aps := service.NewAppUserService(mockStore)
@@ -244,6 +254,69 @@ func TestInactiveUserCannotLogIn(t *testing.T) {
 	assert.Error(t, err)
 	assert.Empty(t, result)
 	mockStore.AssertExpectations(t)
+}
+
+func TestRefreshToken(t *testing.T) {
+	mockStore := new(MockAppUserStore)
+	mockJwtUtil := new(MockJwtUtil)
+	s := service.AppUserService{AppUserStore: mockStore, JwtUtil: mockJwtUtil}
+
+	user := repository.AppUser{ID: uuid.New(), Username: "test", IsActive: true}
+	mockStore.On("GetAppUserById", mock.Anything, user.ID).Return(user, nil)
+	mockStore.On("UpdateAppUserLastLoginNow", mock.Anything, user.ID).Return(user, nil)
+	mockJwtUtil.On("DecodeToken", jwt_util.Refresh, "validToken").Return(map[string]interface{}{"id": user.ID.String()}, nil)
+	mockJwtUtil.On("CreateAccessToken", mock.Anything).Return("newAccessToken", map[string]interface{}{}, nil)
+
+	_, _, _, err := s.RefreshToken(context.Background(), "validToken")
+
+	assert.NoError(t, err)
+	mockStore.AssertExpectations(t)
+	mockJwtUtil.AssertExpectations(t)
+}
+
+func TestRefreshTokenInvalidToken(t *testing.T) {
+	mockStore := new(MockAppUserStore)
+	mockJwtUtil := new(MockJwtUtil)
+	s := service.AppUserService{AppUserStore: mockStore, JwtUtil: mockJwtUtil}
+
+	mockJwtUtil.On("DecodeToken", jwt_util.Refresh, "invalidToken").Return(map[string]interface{}{}, errors.New("invalid token"))
+	_, _, _, err := s.RefreshToken(context.Background(), "invalidToken")
+
+	assert.Error(t, err)
+	mockStore.AssertExpectations(t)
+	mockJwtUtil.AssertExpectations(t)
+}
+
+func TestRefreshTokenUserNotFound(t *testing.T) {
+	mockStore := new(MockAppUserStore)
+	mockJwtUtil := new(MockJwtUtil)
+	s := service.AppUserService{AppUserStore: mockStore, JwtUtil: mockJwtUtil}
+
+	userId := uuid.New()
+	mockJwtUtil.On("DecodeToken", jwt_util.Refresh, "validToken").Return(map[string]interface{}{"id": userId.String()}, nil)
+	mockStore.On("GetAppUserById", mock.Anything, userId).Return(repository.AppUser{}, errors.New("user not found"))
+
+	_, _, _, err := s.RefreshToken(context.Background(), "validToken")
+
+	assert.Error(t, err)
+	mockStore.AssertExpectations(t)
+	mockJwtUtil.AssertExpectations(t)
+}
+
+func TestRefreshTokenInactiveUser(t *testing.T) {
+	mockStore := new(MockAppUserStore)
+	mockJwtUtil := new(MockJwtUtil)
+	s := service.AppUserService{AppUserStore: mockStore, JwtUtil: mockJwtUtil}
+
+	user := repository.AppUser{ID: uuid.New(), Username: "test", IsActive: false}
+	mockJwtUtil.On("DecodeToken", jwt_util.Refresh, "validToken").Return(map[string]interface{}{"id": user.ID.String()}, nil)
+	mockStore.On("GetAppUserById", mock.Anything, user.ID).Return(user, nil)
+
+	_, _, _, err := s.RefreshToken(context.Background(), "validToken")
+
+	assert.Error(t, err)
+	mockStore.AssertExpectations(t)
+	mockJwtUtil.AssertExpectations(t)
 }
 
 func TestVerifyEmailVerificationToken(t *testing.T) {
