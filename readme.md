@@ -112,7 +112,7 @@ The user model is included as a sample model, and includes the following fields:
 - `last_name` - The user's last name
 - `is_staff` - Whether the user is a staff member
 - `is_active` - Whether the user is active
-- `date_joined` - The user's date of joining // TODO: sign up service logic
+- `date_joined` - The user's date of joining
 
 ### User queries
 SQLC is used to generate repository functions using SQL queries located in ["sqlc/queries" directory](sqlc/queries).
