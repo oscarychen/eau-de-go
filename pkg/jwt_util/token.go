@@ -43,7 +43,7 @@ func (j *jwtUtil) createToken(claims map[string]interface{}) (string, map[string
 	j.injectStandardClaims(claims)
 	token := jwt.NewWithClaims(jwt.SigningMethodPS256, jwt.MapClaims(claims))
 
-	signingKey, err := keys.GetInMemoryRsaKeyPair().GetSigningKey()
+	signingKey, err := keys.GetInMemoryRsaKeyStore().GetSigningKey()
 	tokenString, err := token.SignedString(signingKey)
 	if err != nil {
 		return "", nil, err
@@ -54,7 +54,7 @@ func (j *jwtUtil) createToken(claims map[string]interface{}) (string, map[string
 
 func (j *jwtUtil) DecodeToken(tokenType TokenType, tokenString string) (map[string]interface{}, error) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		return keys.GetInMemoryRsaKeyPair().GetVerificationKey()
+		return keys.GetInMemoryRsaKeyStore().GetVerificationKey()
 	})
 
 	if err != nil {

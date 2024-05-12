@@ -7,14 +7,14 @@ import (
 )
 
 func TestGetInMemoryRsaKeyPair_Singleton(t *testing.T) {
-	keyPair1 := keys.GetInMemoryRsaKeyPair()
-	keyPair2 := keys.GetInMemoryRsaKeyPair()
+	keyPair1 := keys.GetInMemoryRsaKeyStore()
+	keyPair2 := keys.GetInMemoryRsaKeyStore()
 
-	assert.Equal(t, keyPair1, keyPair2, "GetInMemoryRsaKeyPair should always return the same instance")
+	assert.Equal(t, keyPair1, keyPair2, "GetInMemoryRsaKeyStore should always return the same instance")
 }
 
 func TestInMemoryRsaKeyPair_GetVerificationKey(t *testing.T) {
-	keyPair := keys.GetInMemoryRsaKeyPair()
+	keyPair := keys.GetInMemoryRsaKeyStore()
 
 	verificationKey1, err1 := keyPair.GetVerificationKey()
 	assert.Nil(t, err1, "GetVerificationKey should not return an error")
@@ -26,7 +26,7 @@ func TestInMemoryRsaKeyPair_GetVerificationKey(t *testing.T) {
 }
 
 func TestInMemoryRsaKeyPair_GetSigningKey(t *testing.T) {
-	keyPair := keys.GetInMemoryRsaKeyPair()
+	keyPair := keys.GetInMemoryRsaKeyStore()
 
 	signingKey1, err1 := keyPair.GetSigningKey()
 	assert.Nil(t, err1, "GetSigningKey should not return an error")

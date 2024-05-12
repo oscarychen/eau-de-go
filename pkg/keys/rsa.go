@@ -6,26 +6,28 @@ import (
 	"fmt"
 )
 
-type RsaKeyPair interface {
+type RsaKeyStore interface {
 	GetVerificationKey() (*rsa.PublicKey, error)
 	GetSigningKey() (*rsa.PrivateKey, error)
 }
 
-type inMemoryRsaKeyPair struct {
+// In-memory RSA key store, for monolithic deployment and development.
+// RSA key pair is generated on first access and kept only in memory.
+type inMemoryRsaKeyStore struct {
 	signingKey      *rsa.PrivateKey
 	verificationKey *rsa.PublicKey
 }
 
-var inMemoryRsaKeyPairInstance *inMemoryRsaKeyPair
+var inMemoryRsaKeyStoreInstance *inMemoryRsaKeyStore
 
-func GetInMemoryRsaKeyPair() RsaKeyPair {
-	if inMemoryRsaKeyPairInstance == nil {
-		inMemoryRsaKeyPairInstance = &inMemoryRsaKeyPair{}
+func GetInMemoryRsaKeyStore() RsaKeyStore {
+	if inMemoryRsaKeyStoreInstance == nil {
+		inMemoryRsaKeyStoreInstance = &inMemoryRsaKeyStore{}
 	}
-	return inMemoryRsaKeyPairInstance
+	return inMemoryRsaKeyStoreInstance
 }
 
-func (keyPair *inMemoryRsaKeyPair) makeKeyPair() (*rsa.PrivateKey, *rsa.PublicKey, error) {
+func (keyPair *inMemoryRsaKeyStore) makeKeyPair() (*rsa.PrivateKey, *rsa.PublicKey, error) {
 	signingKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		fmt.Println(fmt.Sprintf("Failed to create private key: %s", err))
@@ -39,7 +41,7 @@ func (keyPair *inMemoryRsaKeyPair) makeKeyPair() (*rsa.PrivateKey, *rsa.PublicKe
 	return signingKey, verificationKey, nil
 }
 
-func (keyPair *inMemoryRsaKeyPair) GetVerificationKey() (*rsa.PublicKey, error) {
+func (keyPair *inMemoryRsaKeyStore) GetVerificationKey() (*rsa.PublicKey, error) {
 	if keyPair.verificationKey == nil {
 		_, _, err := keyPair.makeKeyPair()
 		if err != nil {
@@ -50,7 +52,7 @@ func (keyPair *inMemoryRsaKeyPair) GetVerificationKey() (*rsa.PublicKey, error) 
 	return keyPair.verificationKey, nil
 }
 
-func (keyPair *inMemoryRsaKeyPair) GetSigningKey() (*rsa.PrivateKey, error) {
+func (keyPair *inMemoryRsaKeyStore) GetSigningKey() (*rsa.PrivateKey, error) {
 	if keyPair.signingKey == nil {
 		_, _, err := keyPair.makeKeyPair()
 		if err != nil {
