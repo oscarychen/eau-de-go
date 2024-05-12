@@ -25,10 +25,13 @@ type JwtUtil interface {
 }
 
 type jwtUtil struct {
+	KeyStore keys.RsaKeyStore
 }
 
 func NewJwtUtil() *jwtUtil {
-	return &jwtUtil{}
+	return &jwtUtil{
+		KeyStore: keys.GetInMemoryRsaKeyStore(),
+	}
 }
 
 func (j *jwtUtil) injectStandardClaims(claims map[string]interface{}) {
@@ -43,7 +46,7 @@ func (j *jwtUtil) createToken(claims map[string]interface{}) (string, map[string
 	j.injectStandardClaims(claims)
 	token := jwt.NewWithClaims(jwt.SigningMethodPS256, jwt.MapClaims(claims))
 
-	signingKey, err := keys.GetInMemoryRsaKeyStore().GetSigningKey()
+	signingKey, err := j.KeyStore.GetSigningKey()
 	tokenString, err := token.SignedString(signingKey)
 	if err != nil {
 		return "", nil, err
@@ -54,7 +57,7 @@ func (j *jwtUtil) createToken(claims map[string]interface{}) (string, map[string
 
 func (j *jwtUtil) DecodeToken(tokenType TokenType, tokenString string) (map[string]interface{}, error) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		return keys.GetInMemoryRsaKeyStore().GetVerificationKey()
+		return j.KeyStore.GetVerificationKey()
 	})
 
 	if err != nil {
