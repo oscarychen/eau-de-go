@@ -27,7 +27,7 @@ func GetInMemoryRsaKeyStore() RsaKeyStore {
 	return inMemoryRsaKeyStoreInstance
 }
 
-func (keyPair *inMemoryRsaKeyStore) makeKeyPair() (*rsa.PrivateKey, *rsa.PublicKey, error) {
+func (keyStore *inMemoryRsaKeyStore) makeKeyPair() (*rsa.PrivateKey, *rsa.PublicKey, error) {
 	signingKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		fmt.Println(fmt.Sprintf("Failed to create private key: %s", err))
@@ -35,30 +35,30 @@ func (keyPair *inMemoryRsaKeyStore) makeKeyPair() (*rsa.PrivateKey, *rsa.PublicK
 	}
 	verificationKey := &signingKey.PublicKey
 
-	keyPair.signingKey = signingKey
-	keyPair.verificationKey = verificationKey
+	keyStore.signingKey = signingKey
+	keyStore.verificationKey = verificationKey
 	fmt.Println("Created new key pair")
 	return signingKey, verificationKey, nil
 }
 
-func (keyPair *inMemoryRsaKeyStore) GetVerificationKey() (*rsa.PublicKey, error) {
-	if keyPair.verificationKey == nil {
-		_, _, err := keyPair.makeKeyPair()
+func (keyStore *inMemoryRsaKeyStore) GetVerificationKey() (*rsa.PublicKey, error) {
+	if keyStore.verificationKey == nil {
+		_, _, err := keyStore.makeKeyPair()
 		if err != nil {
 			fmt.Println(fmt.Sprintf("Failed to create key pair: %s", err))
 			return nil, nil
 		}
 	}
-	return keyPair.verificationKey, nil
+	return keyStore.verificationKey, nil
 }
 
-func (keyPair *inMemoryRsaKeyStore) GetSigningKey() (*rsa.PrivateKey, error) {
-	if keyPair.signingKey == nil {
-		_, _, err := keyPair.makeKeyPair()
+func (keyStore *inMemoryRsaKeyStore) GetSigningKey() (*rsa.PrivateKey, error) {
+	if keyStore.signingKey == nil {
+		_, _, err := keyStore.makeKeyPair()
 		if err != nil {
 			fmt.Println(fmt.Sprintf("Failed to create key pair: %s", err))
 			return nil, err
 		}
 	}
-	return keyPair.signingKey, nil
+	return keyStore.signingKey, nil
 }
