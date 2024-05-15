@@ -9,20 +9,24 @@ import (
 )
 
 var (
-	DbHost              string
-	DbPort              string
-	DbSslMode           string
-	DbUsername          string
-	DbName              string
-	DbPassword          string
-	RefreshTokenLife    time.Duration
-	AccessTokenLife     time.Duration
-	RefreshCookieSecure bool
-	ServerPort          string
-	EmailHost           string
-	EmailPort           string
-	EmailHostUser       string
-	EmailHostPassword   string
+	DbHost                 string
+	DbPort                 string
+	DbSslMode              string
+	DbUsername             string
+	DbName                 string
+	DbPassword             string
+	RefreshTokenLife       time.Duration
+	AccessTokenLife        time.Duration
+	RefreshCookieSecure    bool
+	ServerPort             string
+	EmailHost              string
+	EmailPort              string
+	EmailHostUser          string
+	EmailHostPassword      string
+	AwsS3KeyStoreRegion    string
+	AwsS3KeyStoreBucket    string
+	JwtSigningKeyPath      string
+	JwtVerificationKeyPath string
 )
 
 func init() {
@@ -44,6 +48,11 @@ func init() {
 	EmailPort = getEnv("EMAIL_PORT", "587")
 	EmailHostUser = getEnv("EMAIL_HOST_USER", "")
 	EmailHostPassword = getEnv("EMAIL_HOST_PASSWORD", "")
+
+	AwsS3KeyStoreRegion = getEnv("AWS_S3_KEY_STORE_REGION", "ca-central-1")
+	AwsS3KeyStoreBucket = getEnv("AWS_S3_KEY_STORE_BUCKET", "")
+	JwtSigningKeyPath = getEnv("JWT_SIGNING_KEY_PATH", "rsa/jwt.pem")
+	JwtVerificationKeyPath = getEnv("JWT_VERIFICATION_KEY_PATH", "rsa/jwt.pub")
 
 	if refreshTokenLifeMinutes, err := strconv.Atoi(getEnv("REFRESH_TOKEN_LIFE_MINUTES", "10080")); err == nil {
 		RefreshTokenLife = time.Minute * time.Duration(refreshTokenLifeMinutes)
