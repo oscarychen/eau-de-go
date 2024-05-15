@@ -3,10 +3,19 @@ package keys
 import (
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/x509"
+	"eau-de-go/settings"
+	"encoding/pem"
 	"fmt"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	log "github.com/sirupsen/logrus"
 )
 
 type RsaKeyStore interface {
+	CreateKeyPair() (*rsa.PrivateKey, *rsa.PublicKey, error)
 	GetVerificationKey() (*rsa.PublicKey, error)
 	GetSigningKey() (*rsa.PrivateKey, error)
 }
@@ -27,7 +36,7 @@ func GetInMemoryRsaKeyStore() RsaKeyStore {
 	return inMemoryRsaKeyStoreInstance
 }
 
-func (keyStore *inMemoryRsaKeyStore) makeKeyPair() (*rsa.PrivateKey, *rsa.PublicKey, error) {
+func (keyStore *inMemoryRsaKeyStore) CreateKeyPair() (*rsa.PrivateKey, *rsa.PublicKey, error) {
 	signingKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		fmt.Println(fmt.Sprintf("Failed to create private key: %s", err))
@@ -43,7 +52,7 @@ func (keyStore *inMemoryRsaKeyStore) makeKeyPair() (*rsa.PrivateKey, *rsa.Public
 
 func (keyStore *inMemoryRsaKeyStore) GetVerificationKey() (*rsa.PublicKey, error) {
 	if keyStore.verificationKey == nil {
-		_, _, err := keyStore.makeKeyPair()
+		_, _, err := keyStore.CreateKeyPair()
 		if err != nil {
 			fmt.Println(fmt.Sprintf("Failed to create key pair: %s", err))
 			return nil, nil
@@ -54,11 +63,117 @@ func (keyStore *inMemoryRsaKeyStore) GetVerificationKey() (*rsa.PublicKey, error
 
 func (keyStore *inMemoryRsaKeyStore) GetSigningKey() (*rsa.PrivateKey, error) {
 	if keyStore.signingKey == nil {
-		_, _, err := keyStore.makeKeyPair()
+		_, _, err := keyStore.CreateKeyPair()
 		if err != nil {
 			fmt.Println(fmt.Sprintf("Failed to create key pair: %s", err))
 			return nil, err
 		}
 	}
 	return keyStore.signingKey, nil
+}
+
+// AWS S3 RSA key store, for distributed deployment.
+// RSA key pair is fetched from AWS S3 on first access and kept in memory
+type awsS3RsaKeyStore struct {
+	signingKey      *rsa.PrivateKey
+	verificationKey *rsa.PublicKey
+	Session         *session.Session
+	Downloader      *s3manager.Downloader
+}
+
+var awsS3RsaKeyStoreInstance *awsS3RsaKeyStore
+
+func GetAwsS3RsaKeyStore() RsaKeyStore {
+	if awsS3RsaKeyStoreInstance == nil {
+		session, err := session.NewSession(
+			&aws.Config{Region: aws.String(settings.AwsS3KeyStoreRegion)},
+		)
+		if err != nil {
+			log.Errorf("Failed to create AWS session: %s", err)
+		}
+		downloader := s3manager.NewDownloader(session)
+		awsS3RsaKeyStoreInstance = &awsS3RsaKeyStore{Session: session, Downloader: downloader}
+	}
+	return awsS3RsaKeyStoreInstance
+}
+
+func (keyStore *awsS3RsaKeyStore) CreateKeyPair() (*rsa.PrivateKey, *rsa.PublicKey, error) {
+	return nil, nil, nil
+}
+
+func (keyStore *awsS3RsaKeyStore) GetVerificationKey() (*rsa.PublicKey, error) {
+	if keyStore.verificationKey == nil {
+		signingKey, verificationKey, err := keyStore.fetchFromS3()
+		if err != nil {
+			return nil, err
+		}
+		keyStore.signingKey = signingKey
+		keyStore.verificationKey = verificationKey
+	}
+	return keyStore.verificationKey, nil
+}
+
+func (keyStore *awsS3RsaKeyStore) GetSigningKey() (*rsa.PrivateKey, error) {
+	if keyStore.signingKey == nil {
+		signingKey, verificationKey, err := keyStore.fetchFromS3()
+		if err != nil {
+			return nil, err
+		}
+		keyStore.signingKey = signingKey
+		keyStore.verificationKey = verificationKey
+	}
+	return keyStore.signingKey, nil
+}
+
+func (keyStore *awsS3RsaKeyStore) fetchFromS3() (*rsa.PrivateKey, *rsa.PublicKey, error) {
+
+	downloader := s3manager.NewDownloader(keyStore.Session)
+	privateKeyBuf := new(aws.WriteAtBuffer)
+	_, err := downloader.Download(
+		privateKeyBuf,
+		&s3.GetObjectInput{
+			Bucket: aws.String(settings.AwsS3KeyStoreBucket),
+			Key:    aws.String(settings.JwtSigningKeyPath),
+		})
+	if err != nil {
+		log.Errorf("Failed to download private key from S3: %s", err)
+		return nil, nil, err
+	}
+	privateBlock, _ := pem.Decode(privateKeyBuf.Bytes())
+	if privateBlock == nil {
+		log.Error("Failed to decode private key")
+		return nil, nil, err
+	}
+	privateKey, err := x509.ParsePKCS1PrivateKey(privateBlock.Bytes)
+	if err != nil {
+		log.Errorf("Failed to parse private key: %s", err)
+		return nil, nil, err
+	}
+	publicKeyBuf := new(aws.WriteAtBuffer)
+	_, err = downloader.Download(
+		publicKeyBuf,
+		&s3.GetObjectInput{
+			Bucket: aws.String(settings.AwsS3KeyStoreBucket),
+			Key:    aws.String(settings.JwtVerificationKeyPath),
+		})
+	if err != nil {
+		log.Errorf("Failed to download public key from S3: %s", err)
+		return nil, nil, err
+	}
+	publicBlock, _ := pem.Decode(publicKeyBuf.Bytes())
+	if publicBlock == nil {
+		log.Error("Failed to decode public key")
+		return nil, nil, err
+	}
+	publicInterface, err := x509.ParsePKIXPublicKey(publicBlock.Bytes)
+	if err != nil {
+		log.Errorf("Failed to parse public key: %s", err)
+		return nil, nil, err
+	}
+	publicKey, ok := publicInterface.(*rsa.PublicKey)
+	if !ok {
+		log.Error("Failed to cast public key to RSA public key")
+		return nil, nil, err
+	}
+	return privateKey, publicKey, nil
 }
