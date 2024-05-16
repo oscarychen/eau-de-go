@@ -1,6 +1,7 @@
 package keys
 
 import (
+	"bytes"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
@@ -98,7 +99,54 @@ func GetAwsS3RsaKeyStore() RsaKeyStore {
 }
 
 func (keyStore *awsS3RsaKeyStore) CreateKeyPair() (*rsa.PrivateKey, *rsa.PublicKey, error) {
-	return nil, nil, nil
+	signingKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		fmt.Println(fmt.Sprintf("Failed to create private key: %s", err))
+		return nil, nil, err
+	}
+	verificationKey := &signingKey.PublicKey
+	err = keyStore.pushToS3(signingKey, verificationKey)
+	if err != nil {
+		fmt.Println(fmt.Sprintf("Failed to push key pair to S3: %s", err))
+		return nil, nil, err
+	}
+	keyStore.signingKey = signingKey
+	keyStore.verificationKey = verificationKey
+	fmt.Println("Created new key pair")
+	return signingKey, verificationKey, nil
+}
+
+func (keyStore *awsS3RsaKeyStore) pushToS3(privateKey *rsa.PrivateKey, publicKey *rsa.PublicKey) error {
+	uploader := s3manager.NewUploader(keyStore.Session)
+	privateKeyBytes := x509.MarshalPKCS1PrivateKey(privateKey)
+	privateKeyPem := pem.EncodeToMemory(&pem.Block{Type: "RSA PRIVATE KEY", Bytes: privateKeyBytes})
+	_, err := uploader.Upload(
+		&s3manager.UploadInput{
+			Bucket: aws.String(settings.AwsS3KeyStoreBucket),
+			Key:    aws.String(settings.JwtSigningKeyPath),
+			Body:   bytes.NewReader(privateKeyPem),
+		})
+	if err != nil {
+		log.Errorf("Failed to upload private key to S3: %s", err)
+		return err
+	}
+	publicKeyBytes, err := x509.MarshalPKIXPublicKey(publicKey)
+	if err != nil {
+		log.Errorf("Failed to marshal public key: %s", err)
+		return err
+	}
+	publicKeyPem := pem.EncodeToMemory(&pem.Block{Type: "RSA PUBLIC KEY", Bytes: publicKeyBytes})
+	_, err = uploader.Upload(
+		&s3manager.UploadInput{
+			Bucket: aws.String(settings.AwsS3KeyStoreBucket),
+			Key:    aws.String(settings.JwtVerificationKeyPath),
+			Body:   bytes.NewReader(publicKeyPem),
+		})
+	if err != nil {
+		log.Errorf("Failed to upload public key to S3: %s", err)
+		return err
+	}
+	return nil
 }
 
 func (keyStore *awsS3RsaKeyStore) GetVerificationKey() (*rsa.PublicKey, error) {
@@ -127,9 +175,8 @@ func (keyStore *awsS3RsaKeyStore) GetSigningKey() (*rsa.PrivateKey, error) {
 
 func (keyStore *awsS3RsaKeyStore) fetchFromS3() (*rsa.PrivateKey, *rsa.PublicKey, error) {
 
-	downloader := s3manager.NewDownloader(keyStore.Session)
 	privateKeyBuf := new(aws.WriteAtBuffer)
-	_, err := downloader.Download(
+	_, err := keyStore.Downloader.Download(
 		privateKeyBuf,
 		&s3.GetObjectInput{
 			Bucket: aws.String(settings.AwsS3KeyStoreBucket),
@@ -150,7 +197,7 @@ func (keyStore *awsS3RsaKeyStore) fetchFromS3() (*rsa.PrivateKey, *rsa.PublicKey
 		return nil, nil, err
 	}
 	publicKeyBuf := new(aws.WriteAtBuffer)
-	_, err = downloader.Download(
+	_, err = keyStore.Downloader.Download(
 		publicKeyBuf,
 		&s3.GetObjectInput{
 			Bucket: aws.String(settings.AwsS3KeyStoreBucket),
